@@ -27,8 +27,9 @@ def fetch_ihsg_daily() -> pd.DataFrame:
 
     # Reset index so Date becomes a column
     raw = raw.reset_index()
-    raw = raw.rename(columns={"index": "date", "Date": "date"})
-    raw["date"] = pd.to_datetime(raw["date"])
+    raw = raw.rename(columns={"index": "date", "Date": "date", "Datetime": "date"})
+    # Strip timezone info if present (yfinance 1.x returns tz-aware index)
+    raw["date"] = pd.to_datetime(raw["date"]).dt.tz_localize(None)
 
     # Keep only the expected columns
     raw = raw[["date", "open", "high", "low", "close", "volume"]]
