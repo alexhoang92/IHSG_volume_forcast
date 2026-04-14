@@ -1,0 +1,34 @@
+# MACRO SHOCK SCORE GUIDE
+# +2.0 : Major positive shock  (e.g. BI rate cut, large FDI announcement, IMF upgrade)
+# +1.5 : Moderate positive     (e.g. better-than-expected GDP, current account surplus)
+# +1.0 : Mild positive         (e.g. stable inflation print, positive trade balance)
+# +0.5 : Slight positive       (e.g. minor reform announcement)
+#  0.0 : Neutral / no event
+# -0.5 : Slight negative       (e.g. minor USD/IDR pressure)
+# -1.0 : Mild negative         (e.g. tariff threat, FII outflow week)
+# -1.5 : Moderate negative     (e.g. political uncertainty, BI surprise hold)
+# -2.0 : Major negative shock  (e.g. sudden rate hike, geopolitical escalation, crisis)
+#
+# EVENT TYPE values: geopolitical | monetary_policy | trade | corporate | (leave blank if none)
+# policy_rate: Bank Indonesia benchmark rate in % (e.g. 6.00) — fill every row
+# new_accounts: (OPTIONAL) actual weekly new brokerage registrations — enables real Model 2 fitting
+#               Leave blank to use synthetic demo data instead.
+#
+# INSTRUCTIONS:
+#   1. Copy this file and rename to macro_shocks.csv
+#   2. Fill in ALL weeks from 2023-01-06 (first Friday) to today
+#   3. For weeks with no notable event: leave event_description as "No major event",
+#      shock_score as 0, event_type blank
+#   4. Save the filled file to data/macro/macro_shocks.csv
+#   5. Run: python main.py
+#
+week_end_date,event_description,shock_score,event_type,policy_rate,new_accounts
+2024-01-05,No major event,0,,6.00,
+2024-01-12,BI holds rate at 6%,0.5,monetary_policy,6.00,
+2024-01-19,US tariff threat on EV exports,-1.0,trade,6.00,
+2024-01-26,No major event,0,,6.00,
+2024-02-02,Pemilu uncertainty spike,-1.5,geopolitical,6.00,
+2024-02-09,No major event,0,,6.00,
+2024-02-16,No major event,0,,6.00,
+2024-02-23,No major event,0,,6.00,
+2024-03-01,No major event,0,,6.00,
