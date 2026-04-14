@@ -76,6 +76,9 @@ def forecast_model1(
         future_exog = future_exog_df[EXOG_COLS].copy()
         if len(future_exog) != steps:
             steps = len(future_exog)
+        # Fill any NaN in test-window exog with last known training values
+        last_train = weekly_df[EXOG_COLS].dropna().iloc[-1]
+        future_exog = future_exog.fillna(last_train)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
