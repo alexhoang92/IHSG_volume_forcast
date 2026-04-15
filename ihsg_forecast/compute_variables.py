@@ -160,6 +160,10 @@ def _add_weekly_return(weekly: pd.DataFrame) -> pd.DataFrame:
 
 def _add_log_volume(weekly: pd.DataFrame) -> pd.DataFrame:
     weekly["log_volume"] = np.log(weekly["volume"])
+    # Trading-day-adjusted: log of avg daily volume — removes calendar swing
+    weekly["log_volume_adj"] = np.log(weekly["volume"] / weekly["trading_days"])
+    # log(trading_days) is the correct linear regressor under volume proportionality
+    weekly["log_trading_days"] = np.log(weekly["trading_days"])
     return weekly
 
 
@@ -189,13 +193,15 @@ def _add_realized_volatility(weekly: pd.DataFrame, daily_df: pd.DataFrame) -> pd
 
 
 def _add_volume_momentum(weekly: pd.DataFrame) -> pd.DataFrame:
-    weekly["volume_momentum"] = weekly["log_volume"].diff(1)
+    # Use adjusted volume so momentum reflects true market activity, not calendar
+    weekly["volume_momentum"] = weekly["log_volume_adj"].diff(1)
     return weekly
 
 
 def _add_lagged_log_volume(weekly: pd.DataFrame) -> pd.DataFrame:
+    # Lags derived from adjusted volume — prevents holiday weeks from polluting AR structure
     for k in range(1, 5):
-        weekly[f"lag_lv_{k}"] = weekly["log_volume"].shift(k)
+        weekly[f"lag_lv_{k}"] = weekly["log_volume_adj"].shift(k)
     return weekly
 
 
@@ -327,7 +333,8 @@ def compute_all_variables(daily_df: pd.DataFrame, macro_df: pd.DataFrame) -> pd.
 
     # Final column ordering
     base_cols = [
-        "week_end_date", "index_level", "weekly_return", "log_volume",
+        "week_end_date", "index_level", "weekly_return",
+        "log_volume", "log_volume_adj", "log_trading_days",
         "realized_volatility", "volume_momentum",
         "lag_lv_1", "lag_lv_2", "lag_lv_3", "lag_lv_4",
         "cumulative_4w_return", "interest_rate_direction", "macro_shock_score",

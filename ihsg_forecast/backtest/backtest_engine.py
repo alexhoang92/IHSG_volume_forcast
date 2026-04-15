@@ -139,11 +139,13 @@ def run_backtest(weekly_df: pd.DataFrame) -> pd.DataFrame:
         acct_forecast = forecast_model2(fitted2, sig_lags, forecast_df, train_df)
 
         # Align actuals with forecast
-        actual_lv = test_df["log_volume"].values
+        # Use trading-day-adjusted log volume (model target) for metric computation
+        actual_lv = test_df["log_volume_adj"].values
         forecast_lv = forecast_df["forecast_log_volume"].values
         lower = forecast_df["lower_ci"].values
         upper = forecast_df["upper_ci"].values
-        actual_vol = np.exp(actual_lv)
+        # Recover total weekly volume: exp(log_volume_adj) * trading_days
+        actual_vol = np.exp(actual_lv) * test_df["trading_days"].values
         forecast_vol = forecast_df["forecast_volume"].values
 
         # new_accounts actuals
@@ -170,6 +172,7 @@ def run_backtest(weekly_df: pd.DataFrame) -> pd.DataFrame:
             {
                 "cycle":                cycle_num,
                 "week_end_date":        test_df["week_end_date"].values[:n],
+                "trading_days":         test_df["trading_days"].values[:n],
                 "actual_log_volume":    actual_lv[:n],
                 "forecast_log_volume":  forecast_lv[:n],
                 "lower_ci":             lower[:n],
@@ -246,7 +249,7 @@ def _plot_backtest_results(results_df: pd.DataFrame, weekly_df: pd.DataFrame):
         fig, ax = plt.subplots(figsize=(14, 6))
         ax.plot(
             weekly_df["week_end_date"],
-            weekly_df["log_volume"],
+            weekly_df["log_volume_adj"],
             color=COLORS["actual"],
             linewidth=1.5,
             label="Actual (full history)",
@@ -284,10 +287,11 @@ def _plot_backtest_results(results_df: pd.DataFrame, weekly_df: pd.DataFrame):
             color = cycle_colors[cyc]
             ax.plot(grp["week_end_date"], grp["forecast_volume"] / 1e9,
                     color=color, linestyle="--", linewidth=1.5, label=f"Forecast Cycle {cyc}")
+            # CI bands: exp(ci on log_volume_adj) * trading_days → total weekly volume
             ax.fill_between(
                 grp["week_end_date"],
-                np.exp(grp["lower_ci"]) / 1e9,
-                np.exp(grp["upper_ci"]) / 1e9,
+                np.exp(grp["lower_ci"]) * grp["trading_days"] / 1e9,
+                np.exp(grp["upper_ci"]) * grp["trading_days"] / 1e9,
                 color=color, alpha=0.15,
             )
         ax.set_title("IHSG Weekly Volume Levels — Backtest Forecast vs Actual")

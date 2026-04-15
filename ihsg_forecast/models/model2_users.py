@@ -8,7 +8,8 @@ from config import MAX_LAGS
 
 # Exogenous columns for Model 2 (lags added dynamically based on CCF)
 BASE_EXOG_COLS = [
-    "log_volume",
+    "log_volume_adj",      # per-trading-day log volume (calendar-adjusted)
+    "log_trading_days",    # calendar swing regressor
     "volume_momentum",
     "cumulative_4w_return",
     "macro_shock_score",
@@ -24,7 +25,7 @@ def _generate_synthetic_new_accounts(weekly_df: pd.DataFrame) -> pd.Series:
         "  Using synthetic new_accounts series for demonstration.\n"
         "  Add a 'new_accounts' column to macro_shocks.csv to enable real Model 2 fitting."
     )
-    lv = weekly_df["log_volume"].fillna(weekly_df["log_volume"].mean())
+    lv = weekly_df["log_volume_adj"].fillna(weekly_df["log_volume_adj"].mean())
     cr = weekly_df["cumulative_4w_return"].fillna(0)
     base = 5000
     np.random.seed(42)
@@ -120,7 +121,8 @@ def forecast_model2(
     rows = []
     for i, (_, frow) in enumerate(volume_forecast_df.iterrows()):
         row = last_row.copy()
-        row["log_volume"] = frow["forecast_log_volume"]
+        row["log_volume_adj"] = frow["forecast_log_volume"]  # model target is log_volume_adj
+        row["log_trading_days"] = np.log(5)  # assume standard 5-day week
         row["volume_momentum"] = 0.0  # neutral forward assumption
         row["macro_shock_score"] = 0.0
         row["weekly_return"] = last_row["weekly_return"]

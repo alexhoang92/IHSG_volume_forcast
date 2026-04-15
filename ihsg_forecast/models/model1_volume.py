@@ -14,6 +14,7 @@ EXOG_COLS = [
     "d_geo",
     "d_mp",
     "d_trade",
+    "log_trading_days",   # calendar swing adjustment: log(trading_days) per week
 ]
 
 
@@ -22,10 +23,10 @@ def fit_model1(weekly_df: pd.DataFrame):
     Fits SARIMAX on full weekly_df.
     Returns fitted SARIMAXResults object.
     """
-    df = weekly_df[["log_volume"] + EXOG_COLS].dropna().copy()
+    df = weekly_df[["log_volume_adj"] + EXOG_COLS].dropna().copy()
 
     model = SARIMAX(
-        endog=df["log_volume"],
+        endog=df["log_volume_adj"],
         exog=df[EXOG_COLS],
         order=SARIMAX_ORDER,
         seasonal_order=SARIMAX_SEASONAL_ORDER,
@@ -71,6 +72,8 @@ def forecast_model1(
         # Naive forward fill: carry last observed exog, zero out shock score
         last_row = weekly_df[EXOG_COLS].dropna().iloc[-1].copy()
         last_row["macro_shock_score"] = 0.0
+        # Assume standard 5-day trading week; override log_trading_days if known holiday week
+        last_row["log_trading_days"] = np.log(5)
         future_exog = pd.DataFrame([last_row.values] * steps, columns=EXOG_COLS)
     else:
         future_exog = future_exog_df[EXOG_COLS].copy()
@@ -93,19 +96,27 @@ def forecast_model1(
     last_date = weekly_df["week_end_date"].max()
     future_dates = pd.date_range(start=last_date + pd.Timedelta(weeks=1), periods=steps, freq="W-FRI")
 
-    # If future_exog_df was passed (backtest), use the test window dates instead
+    # Determine expected trading days per forecast step for volume back-conversion
     if future_exog_df is not None and "week_end_date" in future_exog_df.columns:
         future_dates = future_exog_df["week_end_date"].values
+        # Use actual trading days from test window (backtest mode)
+        if "trading_days" in future_exog_df.columns:
+            future_trading_days = future_exog_df["trading_days"].fillna(5).values
+        else:
+            future_trading_days = np.full(steps, 5.0)
+    else:
+        future_trading_days = np.full(steps, 5.0)  # standard week assumption
 
     forecast_df = pd.DataFrame(
         {
             "week_end_date": future_dates,
-            "forecast_log_volume": predicted,
+            "forecast_log_volume": predicted,   # log(avg daily volume)
             "lower_ci": lower,
             "upper_ci": upper,
         }
     )
-    forecast_df["forecast_volume"] = np.exp(forecast_df["forecast_log_volume"])
+    # Recover total weekly volume: exp(log_volume_adj) * trading_days
+    forecast_df["forecast_volume"] = np.exp(forecast_df["forecast_log_volume"]) * future_trading_days
 
     # Validate: no NaN allowed in output
     nan_cols = forecast_df[["forecast_log_volume", "lower_ci", "upper_ci"]].isna().any()
