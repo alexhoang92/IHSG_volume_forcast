@@ -155,7 +155,7 @@ ihsg_forecast/
 │   ├── macro/
 │   │   └── macro_shocks_TEMPLATE.csv     ← blank template for user input
 │   └── processed/
-│       ├── weekly_variables.csv          ← 17 computed input variables (weekly)
+│       ├── weekly_variables.csv          ← 19 computed input variables (weekly)
 │       └── formula_notes.csv             ← formula reference for each variable
 └── outputs/
     ├── csv/
@@ -175,10 +175,10 @@ ihsg_forecast/
 | Column | Description |
 |---|---|
 | `week_end_date` | Friday of the forecast week |
-| `forecast_log_volume` | Log-transformed weekly volume forecast |
-| `lower_ci` | 95% confidence interval lower bound (log scale) |
-| `upper_ci` | 95% confidence interval upper bound (log scale) |
-| `forecast_volume_idr_bn` | Forecast volume in IDR billion (back-transformed) |
+| `forecast_log_volume` | Log of avg daily volume forecast (trading-day-adjusted) |
+| `lower_ci` | 95% confidence interval lower bound (log-adj scale) |
+| `upper_ci` | 95% confidence interval upper bound (log-adj scale) |
+| `forecast_volume_idr_bn` | Forecast total weekly volume in IDR billion (`exp(forecast_log_volume) × 5`) |
 | `forecast_new_accounts` | Forecast weekly new brokerage registrations |
 
 ---
@@ -205,11 +205,11 @@ Cycle 3:  Train: all data up to t-2
 
 | Metric | Applied to |
 |---|---|
-| MAE (log vol) | log_volume |
-| RMSE (log vol) | log_volume |
-| MAPE (volume %) | volume levels (IDR) |
+| MAE (log vol) | `log_volume_adj` (trading-day-adjusted) |
+| RMSE (log vol) | `log_volume_adj` |
+| MAPE (volume %) | total weekly volume (IDR) — recovered as `exp(log_volume_adj) × trading_days` |
 | Direction accuracy | weekly volume changes |
-| 95% CI coverage | log_volume |
+| 95% CI coverage | `log_volume_adj` |
 | MAE (new accounts) | new_accounts |
 
 ---
@@ -252,11 +252,16 @@ python main.py --skip-fetch
 ## 8. Model Notes
 
 ### Model 1 — SARIMAX Volume Forecast
-- **Target:** `log_volume` (log-transformed weekly market volume)
-- **Exogenous variables:** `weekly_return`, `realized_volatility`, `macro_shock_score`, `interest_rate_direction`, `d_geo`, `d_mp`, `d_trade`
+- **Target:** `log_volume_adj` — log of *average daily volume* (`log(weekly_volume / trading_days)`), which removes the calendar swing caused by weeks with fewer trading days (public holidays)
+- **Exogenous variables:** `weekly_return`, `realized_volatility`, `macro_shock_score`, `interest_rate_direction`, `d_geo`, `d_mp`, `d_trade`, `log_trading_days`
+- `log_trading_days` captures residual non-proportional calendar effects (e.g. partial-week market openings)
+- **Forward forecast** assumes 5 trading days/week by default; back-transforms to total IDR weekly volume via `exp(forecast) × 5`
 - **Output is back-transformed** to IDR billion for display
 
 ### Model 2 — New Account Forecast
 - **Target:** `new_accounts` (weekly new brokerage registrations)
-- **Inputs:** Model 1 forecast volume + lagged volume, return, momentum signals
+- **Inputs:** Model 1 forecast volume (`log_volume_adj`) + `log_trading_days`, lagged volume, return, momentum signals
 - **Demo mode:** If no `new_accounts` column is provided, a synthetic series is generated (clearly labelled in all outputs)
+
+### Trading Day Adjustment
+Raw weekly volume sums over however many days the exchange was open that week. A 2-day holiday week will show ~60% of a normal week's volume — not because markets were quiet, but because of the calendar. The adjustment `log_volume_adj = log(volume / trading_days)` normalises all weeks to a per-day basis so the model compares like-for-like. The AR features (`volume_momentum`, `lag_lv_1..4`) also use `log_volume_adj` so holiday weeks don't propagate distortions through the autoregressive structure.
