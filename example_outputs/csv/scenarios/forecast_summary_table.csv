@@ -1,0 +1,20 @@
+week_end_date,BASE_vol_idr_bn,BASE_vol_lower_95,BASE_vol_upper_95,BASE_new_accounts,BULL_vol_idr_bn,BULL_new_accounts,BEAR_vol_idr_bn,BEAR_new_accounts
+2026-04-24,209257.63,46691.69,937827.64,98087,209257.63,98087,209257.63,98087
+2026-05-01,215276.47,48034.67,964802.22,99554,215276.47,99554,215276.47,99554
+2026-05-08,202946.54,45283.49,909543.3,96526,213441.79,99109,202946.54,96526
+2026-05-15,237033.8,52889.39,1062311.81,104702,324072.28,123334,319861.31,122493
+2026-05-22,248758.15,55505.45,1114856.69,107383,396156.2,137013,234549.41,104126
+2026-05-29,192442.76,42939.78,862468.62,93877,209017.5,98028,165800.33,86830
+2026-06-05,206373.85,46048.23,924903.41,97376,220031.44,100699,175623.37,89487
+2026-06-12,197310.08,44025.83,884282.42,95113,202300.35,96365,194396.4,94375
+
+# ────────────────────────────────────────────────────────────
+# MODEL & DATA NOTES
+# ────────────────────────────────────────────────────────────
+# Model 1 (Volume): SARIMAX(1,1,1)(1,0,1,52)  AIC=5533.4  BIC=5584.9
+# Model 2 (New Accounts): Negative Binomial  Pseudo R²=0.0756
+# Confidence intervals (BASE_vol_lower_95 / BASE_vol_upper_95) are clipped to forecast ±exp(1.5) due to SARIMAX prediction-interval numerical instability over an 8-week horizon. Treat as indicative range only.
+# IPO WARNING: Negative IPO coefficients detected in Model 2. This suggests announcement_date values in ipo_calendar.csv may be IDX listing dates rather than book-open/subscription-start dates. Shift dates ~3–4 weeks earlier to the actual investor registration window for correct IPO uplift estimation.
+# Data note: 1 week(s) in macro_shocks.csv had blank new_accounts and were excluded from Model 2 fitting.
+# Backtest MAPE (volume) — Cycle 1: 13.8%  |  Cycle 2: 23.0%  |  Cycle 3: 33.3%
+# ────────────────────────────────────────────────────────────
