@@ -90,13 +90,13 @@ def build_future_exog(
         hist_neg = weekly_df["macro_neg_shock"].dropna().tolist()
     else:
         hist_neg = [0.0, 0.0]
-    neg_shock_window = hist_neg[-2:] if len(hist_neg) >= 2 else ([0.0] * (2 - len(hist_neg)) + hist_neg)
+    neg_shock_window = hist_neg[-3:] if len(hist_neg) >= 3 else ([0.0] * (3 - len(hist_neg)) + hist_neg)
 
     if "macro_pos_shock" in weekly_df.columns:
         hist_pos = weekly_df["macro_pos_shock"].dropna().tolist()
     else:
-        hist_pos = [0.0, 0.0]
-    pos_shock_window = hist_pos[-2:] if len(hist_pos) >= 2 else ([0.0] * (2 - len(hist_pos)) + hist_pos)
+        hist_pos = [0.0, 0.0, 0.0]
+    pos_shock_window = hist_pos[-3:] if len(hist_pos) >= 3 else ([0.0] * (3 - len(hist_pos)) + hist_pos)
 
     rows = []
     for i in range(steps):
@@ -118,8 +118,10 @@ def build_future_exog(
         row["macro_shock_abs"] = abs(raw_shock)
         row["macro_neg_lag1"]  = neg_shock_window[-1]
         row["macro_neg_lag2"]  = neg_shock_window[-2] if len(neg_shock_window) >= 2 else 0.0
+        row["macro_neg_lag3"]  = neg_shock_window[-3] if len(neg_shock_window) >= 3 else 0.0
         row["macro_pos_lag1"]  = pos_shock_window[-1]
         row["macro_pos_lag2"]  = pos_shock_window[-2] if len(pos_shock_window) >= 2 else 0.0
+        row["macro_pos_lag3"]  = pos_shock_window[-3] if len(pos_shock_window) >= 3 else 0.0
 
         # Slide shock windows forward for next iteration
         neg_shock_window.append(max(0.0, -raw_shock))

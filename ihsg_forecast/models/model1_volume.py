@@ -10,10 +10,12 @@ EXOG_COLS = [
     "weekly_return",
     "realized_volatility",
     "macro_shock_abs",         # |shock_score| — announcement-week spike (both pos & neg events)
-    "macro_neg_lag1",          # max(0, -shock_score) lag 1 wk — negative event subsequent dampening
-    "macro_neg_lag2",          # max(0, -shock_score) lag 2 wks — negative event subsequent dampening
-    "macro_pos_lag1",          # max(0, +shock_score) lag 1 wk — positive event sustained uplift
-    "macro_pos_lag2",          # max(0, +shock_score) lag 2 wks — positive event sustained uplift
+    "macro_neg_lag1",          # max(0, -shock_score) lag 1 wk — residual panic selling
+    "macro_neg_lag2",          # max(0, -shock_score) lag 2 wks — fear/uncertainty suppression
+    "macro_neg_lag3",          # max(0, -shock_score) lag 3 wks — structural break tail (MSCI downgrade)
+    "macro_pos_lag1",          # max(0, +shock_score) lag 1 wk — fund rebalancing wave 1
+    "macro_pos_lag2",          # max(0, +shock_score) lag 2 wks — sustained buying
+    "macro_pos_lag3",          # max(0, +shock_score) lag 3 wks — MSCI effective-date second wave
     "interest_rate_direction",
     "d_geo",
     "d_mp",
@@ -78,8 +80,10 @@ def forecast_model1(
         last_row["macro_shock_abs"] = 0.0
         last_row["macro_neg_lag1"]  = 0.0
         last_row["macro_neg_lag2"]  = 0.0
+        last_row["macro_neg_lag3"]  = 0.0
         last_row["macro_pos_lag1"]  = 0.0
         last_row["macro_pos_lag2"]  = 0.0
+        last_row["macro_pos_lag3"]  = 0.0
         # Assume standard 5-day trading week; override log_trading_days if known holiday week
         last_row["log_trading_days"] = np.log(5)
         future_exog = pd.DataFrame([last_row.values] * steps, columns=EXOG_COLS)

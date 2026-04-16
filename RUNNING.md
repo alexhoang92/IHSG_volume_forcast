@@ -319,15 +319,17 @@ python main.py --skip-fetch
 | `weekly_return` | Log return of IHSG index |
 | `realized_volatility` | Std dev of daily returns × √n_days |
 | `macro_shock_abs` | `\|shock_score\|` — announcement-week spike (both positive and negative events drive volume up) |
-| `macro_neg_lag1` | `max(0, −score)` lagged 1 wk — residual elevated volume 1 week after negative event |
-| `macro_neg_lag2` | `max(0, −score)` lagged 2 wks — volume suppression 2 weeks after negative event |
-| `macro_pos_lag1` | `max(0, +score)` lagged 1 wk — sustained buying 1 week after positive event |
-| `macro_pos_lag2` | `max(0, +score)` lagged 2 wks — continued uplift 2 weeks after positive event |
+| `macro_neg_lag1` | `max(0, −score)` lag 1 wk — residual panic selling still elevated week +1 |
+| `macro_neg_lag2` | `max(0, −score)` lag 2 wks — fear/uncertainty suppresses volume week +2 |
+| `macro_neg_lag3` | `max(0, −score)` lag 3 wks — structural break tail: MSCI-scale events show −15% at week +3 |
+| `macro_pos_lag1` | `max(0, +score)` lag 1 wk — fund rebalancing first wave, week +1 |
+| `macro_pos_lag2` | `max(0, +score)` lag 2 wks — sustained buying week +2 |
+| `macro_pos_lag3` | `max(0, +score)` lag 3 wks — MSCI effective-date second wave (passive funds execute trades ~2 wks after announcement) |
 | `interest_rate_direction` | 4-week change in BI policy rate |
 | `d_geo`, `d_mp`, `d_trade` | Event-type dummies |
 | `log_trading_days` | Residual calendar effects |
 
-- **Shock decomposition rationale:** Both positive and negative macro events cause a volume spike on the announcement week (euphoric buying or fire-selling). The direction of the event only matters in subsequent weeks: negative shocks depress volume (fear/uncertainty) while positive shocks sustain elevated volume (fund rebalancing, continued buying). The raw signed `macro_shock_score` is retained in `weekly_variables.csv` for reference but is not used directly as a model input.
+- **Shock decomposition rationale:** Both positive and negative macro events cause a volume spike on the announcement week (euphoric buying or fire-selling). The direction of the event only matters in subsequent weeks. Lag windows were calibrated from an event study on 19 historical shock events (|score|≥1.0), measuring log-volume deviation from an 8-week pre-shock rolling baseline: negative events show peak suppression at t+2 (−10% avg) with structural breaks (MSCI downgrade) persisting to t+3; positive events remain elevated through t+3 (75% of events still above baseline), with a non-monotonic second wave at t+3–4 corresponding to the MSCI effective rebalancing date. The raw signed `macro_shock_score` is retained in `weekly_variables.csv` for reference but is not used directly as a model input.
 - **Forward forecast** assumes 5 trading days/week by default; back-transforms to total IDR weekly volume via `exp(forecast) × 5 / 1e9` = IDR Billion
 - **Output is back-transformed** to IDR billion for display; expected range ~100,000–400,000 IDR Bn/week
 - **Minimum data:** 104 weeks (2 years) for reliable seasonal coefficient estimation; 56 weeks absolute minimum
