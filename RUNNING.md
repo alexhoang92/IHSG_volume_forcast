@@ -92,8 +92,10 @@ Open `data/macro/macro_shocks.csv` and fill in **one row per week** from `2023-0
 
 | Score | Meaning | Example |
 |---|---|---|
-| `+2.0` | Major positive shock | BI rate cut, large FDI announcement, IMF upgrade |
-| `+1.5` | Moderate positive | Better-than-expected GDP, current account surplus |
+| `+5.0` | Structural break — major positive | MSCI index confirmation / upgrade, IMF bailout |
+| `+3.0` | Large positive | BI surprise rate cut, sovereign upgrade |
+| `+2.0` | Major positive shock | Large FDI announcement, current account surplus beat |
+| `+1.5` | Moderate positive | Better-than-expected GDP, election win with continuity |
 | `+1.0` | Mild positive | Stable inflation print, positive trade balance |
 | `+0.5` | Slight positive | Minor reform announcement |
 | `0.0` | Neutral / no event | Most weeks |
@@ -101,8 +103,20 @@ Open `data/macro/macro_shocks.csv` and fill in **one row per week** from `2023-0
 | `-1.0` | Mild negative | Tariff threat, FII outflow week |
 | `-1.5` | Moderate negative | Political uncertainty, BI surprise hold |
 | `-2.0` | Major negative shock | Sudden rate hike, geopolitical escalation, crisis |
+| `-3.0` | Large negative | Sovereign downgrade, flash crash |
+| `-5.0` | Structural break — major negative | MSCI downgrade to Frontier, global financial crisis |
 
-> **Extended scale for structural breaks:** The ±2.0 range covers typical market events. For once-in-a-decade shocks (e.g. Iran War, MSCI downgrade of Indonesia, global financial crisis), values of ±3.0 to ±5.0 are supported. The model will linearly extrapolate the shock coefficient — this is an approximation, but it forces the forecast to react more strongly than a capped −2.0 would. Use extended values with human judgement at forecast time.
+> **How the model uses shock scores — asymmetric lag structure:**
+>
+> The model decomposes `shock_score` into three distinct effects rather than using the raw signed value:
+>
+> | Variable | Formula | Effect |
+> |---|---|---|
+> | `macro_shock_abs` | `\|score\|` | **Announcement week:** both positive and negative events drive volume up (euphoric buying or panic selling) |
+> | `macro_neg_lag1/2` | `max(0, −score)` lagged 1–2 wks | **Negative aftermath:** fear and uncertainty suppress volume in the 1–2 weeks following a negative event |
+> | `macro_pos_lag1/2` | `max(0, +score)` lagged 1–2 wks | **Positive momentum:** fund rebalancing and continued buying sustain elevated volume 1–2 weeks after a positive event |
+>
+> This means: a score of `+5.0` (MSCI confirmation) drives a ~63% volume spike on announcement week and ~70% sustained uplift the following week. A score of `−5.0` (MSCI downgrade) drives an equivalent spike on announcement week but then depresses volume ~13% for the next two weeks. Use ±3–5 for structural break events where the market impact is visibly larger than typical events — the model will linearly scale the effect.
 
 > **Note:** The pipeline runs end-to-end **even without this file** — all macro variables default to zero with a warning message. However, forecast quality improves significantly with accurate macro input.
 
@@ -269,6 +283,7 @@ SARIMAX_ORDER        = (1, 1, 1)         # ARIMA (p, d, q)
 SARIMAX_SEASONAL_ORDER = (1, 0, 1, 52)  # Seasonal (P, D, Q, S)
 BACKTEST_MONTHS      = 6                 # total backtest window
 CYCLE_MONTHS         = 2                 # each cycle length
+MACRO_SHOCK_MAX      = 5.0               # clip ceiling for shock scores (±2 typical; ±5 structural breaks)
 ```
 
 After changing `config.py`, re-run with:
@@ -297,8 +312,22 @@ python main.py --skip-fetch
 
 ### Model 1 — SARIMAX Volume Forecast
 - **Target:** `log_volume_adj` — log of *average daily IDR volume* (`log(weekly_IDR_volume / trading_days)`), which removes the calendar swing caused by weeks with fewer trading days (public holidays)
-- **Exogenous variables:** `weekly_return`, `realized_volatility`, `macro_shock_score`, `interest_rate_direction`, `d_geo`, `d_mp`, `d_trade`, `log_trading_days`
-- `log_trading_days` captures residual non-proportional calendar effects (e.g. partial-week market openings)
+- **Exogenous variables:**
+
+| Variable | Description |
+|---|---|
+| `weekly_return` | Log return of IHSG index |
+| `realized_volatility` | Std dev of daily returns × √n_days |
+| `macro_shock_abs` | `\|shock_score\|` — announcement-week spike (both positive and negative events drive volume up) |
+| `macro_neg_lag1` | `max(0, −score)` lagged 1 wk — residual elevated volume 1 week after negative event |
+| `macro_neg_lag2` | `max(0, −score)` lagged 2 wks — volume suppression 2 weeks after negative event |
+| `macro_pos_lag1` | `max(0, +score)` lagged 1 wk — sustained buying 1 week after positive event |
+| `macro_pos_lag2` | `max(0, +score)` lagged 2 wks — continued uplift 2 weeks after positive event |
+| `interest_rate_direction` | 4-week change in BI policy rate |
+| `d_geo`, `d_mp`, `d_trade` | Event-type dummies |
+| `log_trading_days` | Residual calendar effects |
+
+- **Shock decomposition rationale:** Both positive and negative macro events cause a volume spike on the announcement week (euphoric buying or fire-selling). The direction of the event only matters in subsequent weeks: negative shocks depress volume (fear/uncertainty) while positive shocks sustain elevated volume (fund rebalancing, continued buying). The raw signed `macro_shock_score` is retained in `weekly_variables.csv` for reference but is not used directly as a model input.
 - **Forward forecast** assumes 5 trading days/week by default; back-transforms to total IDR weekly volume via `exp(forecast) × 5 / 1e9` = IDR Billion
 - **Output is back-transformed** to IDR billion for display; expected range ~100,000–400,000 IDR Bn/week
 - **Minimum data:** 104 weeks (2 years) for reliable seasonal coefficient estimation; 56 weeks absolute minimum

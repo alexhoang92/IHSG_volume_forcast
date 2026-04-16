@@ -12,7 +12,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from config import SCENARIOS_INPUT_PATH, FORECAST_WEEKS
+from config import SCENARIOS_INPUT_PATH, FORECAST_WEEKS, MACRO_SHOCK_MAX
 from models.model1_volume import EXOG_COLS
 
 
@@ -85,24 +85,45 @@ def build_future_exog(
         sdf = sdf.iloc[:steps].copy()
 
     # Build exog rows starting from last observed values
+    # Seed lag history from last 2 weeks of training data
+    if "macro_neg_shock" in weekly_df.columns:
+        hist_neg = weekly_df["macro_neg_shock"].dropna().tolist()
+    else:
+        hist_neg = [0.0, 0.0]
+    neg_shock_window = hist_neg[-2:] if len(hist_neg) >= 2 else ([0.0] * (2 - len(hist_neg)) + hist_neg)
+
+    if "macro_pos_shock" in weekly_df.columns:
+        hist_pos = weekly_df["macro_pos_shock"].dropna().tolist()
+    else:
+        hist_pos = [0.0, 0.0]
+    pos_shock_window = hist_pos[-2:] if len(hist_pos) >= 2 else ([0.0] * (2 - len(hist_pos)) + hist_pos)
+
     rows = []
     for i in range(steps):
         row = last_obs.copy()
         row["log_trading_days"] = np.log(5)  # assume standard 5-day week
 
-        # Override macro_shock_score
+        # Compute scenario shock for this week (allow ±MACRO_SHOCK_MAX for structural breaks)
+        raw_shock = 0.0
         if "shock_score" in sdf.columns:
             val = sdf.at[i, "shock_score"]
             try:
                 fval = float(val)
-                row["macro_shock_score"] = 0.0 if (fval != fval) else fval  # NaN check: NaN != NaN
+                raw_shock = 0.0 if (fval != fval) else fval  # NaN check: NaN != NaN
             except (TypeError, ValueError):
-                row["macro_shock_score"] = 0.0
-        else:
-            row["macro_shock_score"] = 0.0
+                raw_shock = 0.0
+        raw_shock = float(np.clip(raw_shock, -MACRO_SHOCK_MAX, MACRO_SHOCK_MAX))
 
-        # Clip to valid range
-        row["macro_shock_score"] = float(np.clip(row["macro_shock_score"], -2.0, 2.0))
+        # Decomposed shock variables
+        row["macro_shock_abs"] = abs(raw_shock)
+        row["macro_neg_lag1"]  = neg_shock_window[-1]
+        row["macro_neg_lag2"]  = neg_shock_window[-2] if len(neg_shock_window) >= 2 else 0.0
+        row["macro_pos_lag1"]  = pos_shock_window[-1]
+        row["macro_pos_lag2"]  = pos_shock_window[-2] if len(pos_shock_window) >= 2 else 0.0
+
+        # Slide shock windows forward for next iteration
+        neg_shock_window.append(max(0.0, -raw_shock))
+        pos_shock_window.append(max(0.0,  raw_shock))
 
         # Override event type dummies
         if "event_type" in sdf.columns:

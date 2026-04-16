@@ -10,7 +10,7 @@ BASE,12-Jun-26,,,,
 BULL,24-Apr-26,,,,
 BULL,1-May-26,0.5,monetary_policy,,US FOMC send rate cut possitve message
 BULL,8-May-26,,,,
-BULL,15-May-26,2,corporate,,MSCI maintain Indonesia as Emmerging market
+BULL,15-May-26,5,corporate,,MSCI maintain Indonesia as Emmerging market
 BULL,22-May-26,1,corporate,,FTSE Russel follow MSCI continue market confidence
 BULL,29-May-26,,,,
 BULL,5-Jun-26,,,,
@@ -18,7 +18,7 @@ BULL,12-Jun-26,,,,
 BEAR,24-Apr-26,,,,
 BEAR,1-May-26,-0.5,monetary_policy,,US FOMC maintain high rate in US and hawk view about condition
 BEAR,8-May-26,,,,
-BEAR,15-May-26,-2,corporate,,MSCI downgrade Indonesia
+BEAR,15-May-26,-5,corporate,,MSCI downgrade Indonesia
 BEAR,22-May-26,-1,corporate,,FTSE Russel follow MSCI continue market confidence
 BEAR,29-May-26,,,,
 BEAR,5-Jun-26,,,,

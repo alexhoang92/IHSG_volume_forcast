@@ -37,6 +37,9 @@ IPO_EFFECT_WEEKS_AFTER   = 2
 # Min market cap (IDR trillion) to qualify as a large IPO; set 0 to treat all equally
 IPO_MIN_MARKET_CAP_IDR_T = 1.0
 
+# ── Macro shock scale ─────────────────────────────────────────────────────────
+MACRO_SHOCK_MAX = 5.0     # ±2 for typical events; ±3–5 for structural breaks (MSCI, crisis)
+
 # ── Scenario forecasts ────────────────────────────────────────────────────────
 SCENARIOS_INPUT_PATH  = "data/macro/scenarios.csv"
 SCENARIOS_OUTPUT_DIR  = "outputs/csv/scenarios"

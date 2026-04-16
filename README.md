@@ -6,7 +6,7 @@ An econometric forecasting pipeline for the Indonesian equity market (IDX Compos
 
 | Model | Type | Target | Key Inputs |
 |---|---|---|---|
-| Model 1 | SARIMAX(1,1,1)(1,0,1,52) | `log_volume_adj` (per-day avg) | weekly return, realised volatility, macro shock score, BI rate direction, event dummies, `log_trading_days` |
+| Model 1 | SARIMAX(1,1,1)(1,0,1,52) | `log_volume_adj` (per-day avg) | weekly return, realised volatility, macro shock decomposition (abs + neg/pos lags), BI rate direction, event dummies, `log_trading_days` |
 | Model 2 | Negative Binomial GLM | `new_accounts` | Model 1 volume forecast, volume momentum, lagged volumes, return signals |
 
 ### Trading Day Adjustment

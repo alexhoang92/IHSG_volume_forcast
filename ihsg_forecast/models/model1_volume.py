@@ -9,7 +9,11 @@ from config import SARIMAX_ORDER, SARIMAX_SEASONAL_ORDER, FORECAST_WEEKS
 EXOG_COLS = [
     "weekly_return",
     "realized_volatility",
-    "macro_shock_score",
+    "macro_shock_abs",         # |shock_score| — announcement-week spike (both pos & neg events)
+    "macro_neg_lag1",          # max(0, -shock_score) lag 1 wk — negative event subsequent dampening
+    "macro_neg_lag2",          # max(0, -shock_score) lag 2 wks — negative event subsequent dampening
+    "macro_pos_lag1",          # max(0, +shock_score) lag 1 wk — positive event sustained uplift
+    "macro_pos_lag2",          # max(0, +shock_score) lag 2 wks — positive event sustained uplift
     "interest_rate_direction",
     "d_geo",
     "d_mp",
@@ -71,7 +75,11 @@ def forecast_model1(
     if future_exog_df is None:
         # Naive forward fill: carry last observed exog, zero out shock score
         last_row = weekly_df[EXOG_COLS].dropna().iloc[-1].copy()
-        last_row["macro_shock_score"] = 0.0
+        last_row["macro_shock_abs"] = 0.0
+        last_row["macro_neg_lag1"]  = 0.0
+        last_row["macro_neg_lag2"]  = 0.0
+        last_row["macro_pos_lag1"]  = 0.0
+        last_row["macro_pos_lag2"]  = 0.0
         # Assume standard 5-day trading week; override log_trading_days if known holiday week
         last_row["log_trading_days"] = np.log(5)
         future_exog = pd.DataFrame([last_row.values] * steps, columns=EXOG_COLS)

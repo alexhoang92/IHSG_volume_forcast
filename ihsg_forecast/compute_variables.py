@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 
-from config import MACRO_INPUT_PATH, PROCESSED_DATA_PATH, FORMULA_NOTES_PATH
+from config import MACRO_INPUT_PATH, PROCESSED_DATA_PATH, FORMULA_NOTES_PATH, MACRO_SHOCK_MAX
 
 # ── Formula registry — serialised to formula_notes.csv ────────────────────────
 FORMULA_REGISTRY = {
@@ -216,6 +216,13 @@ def _add_macro_variables(weekly: pd.DataFrame, macro_df: pd.DataFrame) -> pd.Dat
     if macro_df.empty:
         # No macro file — set all to zero
         weekly["macro_shock_score"] = 0.0
+        weekly["macro_shock_abs"] = 0.0
+        weekly["macro_neg_shock"] = 0.0
+        weekly["macro_neg_lag1"] = 0.0
+        weekly["macro_neg_lag2"] = 0.0
+        weekly["macro_pos_shock"] = 0.0
+        weekly["macro_pos_lag1"] = 0.0
+        weekly["macro_pos_lag2"] = 0.0
         weekly["interest_rate_direction"] = 0.0
         for col in ["d_geo", "d_mp", "d_trade", "d_corporate"]:
             weekly[col] = 0
@@ -224,14 +231,14 @@ def _add_macro_variables(weekly: pd.DataFrame, macro_df: pd.DataFrame) -> pd.Dat
     # ── shock_score validation ──────────────────────────────────────────────
     if "shock_score" in macro_df.columns:
         macro_df["shock_score"] = pd.to_numeric(macro_df["shock_score"], errors="coerce").fillna(0)
-        bad_mask = (macro_df["shock_score"] < -2) | (macro_df["shock_score"] > 2)
+        bad_mask = (macro_df["shock_score"] < -MACRO_SHOCK_MAX) | (macro_df["shock_score"] > MACRO_SHOCK_MAX)
         if bad_mask.any():
             for _, row in macro_df[bad_mask].iterrows():
                 print(
                     f"  WARNING: shock_score {row['shock_score']} out of range "
-                    f"at {row['week_end_date']}. Clipping to [-2, 2]."
+                    f"at {row['week_end_date']}. Clipping to [{-MACRO_SHOCK_MAX}, {MACRO_SHOCK_MAX}]."
                 )
-            macro_df["shock_score"] = macro_df["shock_score"].clip(-2, 2)
+            macro_df["shock_score"] = macro_df["shock_score"].clip(-MACRO_SHOCK_MAX, MACRO_SHOCK_MAX)
     else:
         macro_df["shock_score"] = 0.0
 
@@ -244,6 +251,18 @@ def _add_macro_variables(weekly: pd.DataFrame, macro_df: pd.DataFrame) -> pd.Dat
         how="left",
     )
     weekly["macro_shock_score"] = weekly["macro_shock_score"].fillna(0.0)
+
+    # Decompose shock into three distinct effects:
+    #   abs   — announcement-week volume spike (both pos & neg events drive volume up)
+    #   neg lags — negative events suppress volume in subsequent 1-2 weeks (fear/uncertainty)
+    #   pos lags — positive events sustain elevated volume in subsequent 1-2 weeks (fund rebalancing)
+    weekly["macro_shock_abs"] = weekly["macro_shock_score"].abs()
+    weekly["macro_neg_shock"]  = (-weekly["macro_shock_score"]).clip(lower=0)
+    weekly["macro_neg_lag1"]   = weekly["macro_neg_shock"].shift(1).fillna(0.0)
+    weekly["macro_neg_lag2"]   = weekly["macro_neg_shock"].shift(2).fillna(0.0)
+    weekly["macro_pos_shock"]  = weekly["macro_shock_score"].clip(lower=0)
+    weekly["macro_pos_lag1"]   = weekly["macro_pos_shock"].shift(1).fillna(0.0)
+    weekly["macro_pos_lag2"]   = weekly["macro_pos_shock"].shift(2).fillna(0.0)
 
     # ── interest_rate_direction ─────────────────────────────────────────────
     if "policy_rate" in macro_df.columns:
@@ -338,6 +357,9 @@ def compute_all_variables(daily_df: pd.DataFrame, macro_df: pd.DataFrame) -> pd.
         "realized_volatility", "volume_momentum",
         "lag_lv_1", "lag_lv_2", "lag_lv_3", "lag_lv_4",
         "cumulative_4w_return", "interest_rate_direction", "macro_shock_score",
+        "macro_shock_abs",
+        "macro_neg_shock", "macro_neg_lag1", "macro_neg_lag2",
+        "macro_pos_shock", "macro_pos_lag1", "macro_pos_lag2",
         "d_geo", "d_mp", "d_trade", "d_corporate", "trading_days",
     ]
     # Include new_accounts if present
