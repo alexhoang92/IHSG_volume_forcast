@@ -36,19 +36,44 @@ Packages installed (pinned versions):
 
 ---
 
-## 2. User Input Required — Macro Shock File
+## 2. User Input Required — Data Files
+
+**These steps are required before running the full pipeline.**
+
+### Step 2.0 — Provide IDR volume data (required)
+
+The pipeline no longer uses yfinance for volume. It reads daily IDR-value trading volume from a user-provided file:
+
+```
+data/raw/ihsg_volume.csv
+```
+
+**Required columns:**
+
+| Column | Type | Description |
+|---|---|---|
+| `Date` | Date (YYYY-MM-DD) | Trading date |
+| `volume` | Integer | Daily total trading value in IDR (e.g. `13612384062538`) |
+
+The file must cover at least from `FETCH_START` (default `2023-01-01`) to the current date. Rows with missing dates are ignored (they will not appear in the merged output). The pipeline will **fail with a FileNotFoundError** if this file is absent.
+
+> **Volume units:** IDR (Indonesian Rupiah) total daily transaction value — not share count. All forecast outputs (`forecast_volume_idr_bn`) are derived directly from this source.
+
+---
+
+### Step 2.1 — Macro Shock File
 
 **This step is required before running the full pipeline.**
 
 The pipeline uses a user-provided macro shock file to capture qualitative events (BI rate decisions, geopolitical events, trade shocks) that affect market volume.
 
-### Step 2a — Copy the template
+### Step 2.1a — Copy the template
 
 ```bash
 cp data/macro/macro_shocks_TEMPLATE.csv data/macro/macro_shocks.csv
 ```
 
-### Step 2b — Fill in the CSV
+### Step 2.1b — Fill in the CSV
 
 Open `data/macro/macro_shocks.csv` and fill in **one row per week** from `2023-01-06` to today.
 
@@ -77,6 +102,8 @@ Open `data/macro/macro_shocks.csv` and fill in **one row per week** from `2023-0
 | `-1.5` | Moderate negative | Political uncertainty, BI surprise hold |
 | `-2.0` | Major negative shock | Sudden rate hike, geopolitical escalation, crisis |
 
+> **Extended scale for structural breaks:** The ±2.0 range covers typical market events. For once-in-a-decade shocks (e.g. Iran War, MSCI downgrade of Indonesia, global financial crisis), values of ±3.0 to ±5.0 are supported. The model will linearly extrapolate the shock coefficient — this is an approximation, but it forces the forecast to react more strongly than a capped −2.0 would. Use extended values with human judgement at forecast time.
+
 > **Note:** The pipeline runs end-to-end **even without this file** — all macro variables default to zero with a warning message. However, forecast quality improves significantly with accurate macro input.
 
 ---
@@ -96,7 +123,7 @@ python main.py
 ```
 
 Runs all 10 steps:
-1. Fetch IHSG daily OHLCV from Yahoo Finance
+1. Fetch IHSG daily **price** (OHLC) from Yahoo Finance (incremental — appends new days only) and merge with `data/raw/ihsg_volume.csv` for IDR volume
 2. Load macro shock input
 3. Compute 10 weekly input variables
 4. Fit Model 1 (SARIMAX)
@@ -151,23 +178,37 @@ After a full pipeline run, the following files are generated:
 ihsg_forecast/
 ├── data/
 │   ├── raw/
-│   │   └── ihsg_daily_ohlcv.csv          ← raw OHLCV data (daily)
+│   │   ├── ihsg_daily_ohlcv.csv          ← merged daily price+volume (auto-generated)
+│   │   └── ihsg_volume.csv               ← USER-PROVIDED daily IDR volume (required)
 │   ├── macro/
-│   │   └── macro_shocks_TEMPLATE.csv     ← blank template for user input
+│   │   ├── macro_shocks.csv              ← USER-PROVIDED macro shock input
+│   │   ├── macro_shocks_TEMPLATE.csv     ← blank template
+│   │   └── scenarios.csv                 ← USER-PROVIDED scenario definitions (BASE/BULL/BEAR)
+│   ├── ipo/
+│   │   └── ipo_calendar.csv              ← USER-PROVIDED IPO announcement dates
 │   └── processed/
-│       ├── weekly_variables.csv          ← 19 computed input variables (weekly)
+│       ├── weekly_variables.csv          ← computed weekly input variables
 │       └── formula_notes.csv             ← formula reference for each variable
 └── outputs/
     ├── csv/
-    │   ├── forecast_forward.csv          ← 8-week forward forecast
-    │   └── backtest_results.csv          ← week-by-week backtest detail (3 cycles)
+    │   ├── forecast_forward.csv          ← BASE scenario 8-week forecast (backward compat)
+    │   ├── backtest_results.csv          ← week-by-week backtest detail (3 cycles)
+    │   └── scenarios/
+    │       ├── forecast_BASE.csv         ← BASE scenario forecast
+    │       ├── forecast_BULL.csv         ← BULL scenario forecast
+    │       ├── forecast_BEAR.csv         ← BEAR scenario forecast
+    │       ├── forecast_all_scenarios.csv ← all scenarios combined (one row per week/scenario)
+    │       └── forecast_summary_table.csv ← wide-format pivot: all scenarios side-by-side + model notes
     ├── reports/
     │   └── backtest_summary.txt          ← metrics table per cycle
     └── charts/
-        ├── backtest_volume_forecast.png  ← log volume: actual vs forecast
-        ├── backtest_volume_levels.png    ← volume in IDR billion
-        ├── backtest_new_accounts.png     ← new accounts: actual vs forecast
-        └── backtest_error_distribution.png ← MAPE distribution per cycle
+        ├── scenario_fan_chart.png        ← 8-week forecast fan chart (all scenarios + CI)
+        ├── backtest_combined.png         ← combined backtest chart (volume + new accounts, 3 cycles)
+        ├── backtest_volume_forecast.png  ← log volume: actual vs forecast per cycle
+        ├── backtest_volume_levels.png    ← volume in IDR billion per cycle
+        ├── backtest_new_accounts.png     ← new accounts: actual vs forecast per cycle
+        ├── backtest_error_distribution.png ← MAPE distribution per cycle
+        └── ipo_effect_analysis.png       ← IPO uplift analysis chart
 ```
 
 ### Forward Forecast CSV columns
@@ -175,11 +216,13 @@ ihsg_forecast/
 | Column | Description |
 |---|---|
 | `week_end_date` | Friday of the forecast week |
-| `forecast_log_volume` | Log of avg daily volume forecast (trading-day-adjusted) |
-| `lower_ci` | 95% confidence interval lower bound (log-adj scale) |
-| `upper_ci` | 95% confidence interval upper bound (log-adj scale) |
-| `forecast_volume_idr_bn` | Forecast total weekly volume in IDR billion (`exp(forecast_log_volume) × 5`) |
+| `forecast_log_volume` | Log of avg daily IDR volume forecast (trading-day-adjusted) |
+| `lower_ci` | 95% CI lower bound (log scale — clipped to ±1.5 log-units; treat as indicative) |
+| `upper_ci` | 95% CI upper bound (log scale — clipped to ±1.5 log-units; treat as indicative) |
+| `forecast_volume_idr_bn` | Forecast total weekly volume in IDR billion (`exp(forecast_log_volume) × 5 / 1e9`) |
 | `forecast_new_accounts` | Forecast weekly new brokerage registrations |
+
+> The **wide summary table** (`forecast_summary_table.csv`) shows all three scenarios side by side with model diagnostics appended as `# NOTE:` comment lines at the bottom.
 
 ---
 
@@ -239,11 +282,12 @@ python main.py --skip-fetch
 
 | Issue | Solution |
 |---|---|
+| `FileNotFoundError: ihsg_volume.csv` | The IDR volume file is missing. Place `ihsg_volume.csv` with `Date` and `volume` columns in `data/raw/`. |
 | `ValueError: Insufficient data` | Check internet connection; Yahoo Finance may be throttling. Try again in a few minutes. |
 | `WARNING: macro_shocks.csv not found` | Expected if you haven't created the macro file. All macro variables will be 0. |
 | `WARNING: SARIMAX default optimizer failed` | Pipeline automatically retries with `method='nm'`. No action needed. |
 | `WARNING: NegativeBinomial failed` | Pipeline falls back to Poisson GLM. No action needed. |
-| `shock_score out of range` | Edit `macro_shocks.csv` and fix values outside the `[-2, +2]` range. |
+| Forecast volume values look too small (~2 IDR Bn) | Volume source has reverted to yfinance share counts. Ensure `ihsg_volume.csv` is present and covers the full date range. Expected values are ~100,000–300,000 IDR Bn/week. |
 | Charts not generated | Check `outputs/charts/` directory exists. Run `python main.py --backtest-only` to regenerate. |
 | `ModuleNotFoundError` | Ensure you are running from the `ihsg_forecast/` directory and have run `pip install -r requirements.txt`. |
 
@@ -252,16 +296,19 @@ python main.py --skip-fetch
 ## 8. Model Notes
 
 ### Model 1 — SARIMAX Volume Forecast
-- **Target:** `log_volume_adj` — log of *average daily volume* (`log(weekly_volume / trading_days)`), which removes the calendar swing caused by weeks with fewer trading days (public holidays)
+- **Target:** `log_volume_adj` — log of *average daily IDR volume* (`log(weekly_IDR_volume / trading_days)`), which removes the calendar swing caused by weeks with fewer trading days (public holidays)
 - **Exogenous variables:** `weekly_return`, `realized_volatility`, `macro_shock_score`, `interest_rate_direction`, `d_geo`, `d_mp`, `d_trade`, `log_trading_days`
 - `log_trading_days` captures residual non-proportional calendar effects (e.g. partial-week market openings)
-- **Forward forecast** assumes 5 trading days/week by default; back-transforms to total IDR weekly volume via `exp(forecast) × 5`
-- **Output is back-transformed** to IDR billion for display
+- **Forward forecast** assumes 5 trading days/week by default; back-transforms to total IDR weekly volume via `exp(forecast) × 5 / 1e9` = IDR Billion
+- **Output is back-transformed** to IDR billion for display; expected range ~100,000–400,000 IDR Bn/week
+- **Minimum data:** 104 weeks (2 years) for reliable seasonal coefficient estimation; 56 weeks absolute minimum
 
 ### Model 2 — New Account Forecast
 - **Target:** `new_accounts` (weekly new brokerage registrations)
-- **Inputs:** Model 1 forecast volume (`log_volume_adj`) + `log_trading_days`, lagged volume, return, momentum signals
+- **Inputs:** Model 1 forecast volume (`log_volume_adj`, mean-centred) + `log_trading_days`, lagged volume, return, momentum signals, IPO dummies
+- **Mean-centring:** all `lag_lv_*` and `log_volume_adj` features are centred on the training mean before fitting and forecasting. This is required for numerical stability (log of IDR values is ~31, causing near-singular design matrix without centring).
 - **Demo mode:** If no `new_accounts` column is provided, a synthetic series is generated (clearly labelled in all outputs)
+- **Minimum data:** 160 rows for Negative Binomial convergence (10 events-per-parameter rule); falls back to Poisson at ~130 rows
 
 ### Trading Day Adjustment
 Raw weekly volume sums over however many days the exchange was open that week. A 2-day holiday week will show ~60% of a normal week's volume — not because markets were quiet, but because of the calendar. The adjustment `log_volume_adj = log(volume / trading_days)` normalises all weeks to a per-day basis so the model compares like-for-like. The AR features (`volume_momentum`, `lag_lv_1..4`) also use `log_volume_adj` so holiday weeks don't propagate distortions through the autoregressive structure.
