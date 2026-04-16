@@ -94,7 +94,8 @@ def build_future_exog(
         if "shock_score" in sdf.columns:
             val = sdf.at[i, "shock_score"]
             try:
-                row["macro_shock_score"] = float(val)
+                fval = float(val)
+                row["macro_shock_score"] = 0.0 if (fval != fval) else fval  # NaN check: NaN != NaN
             except (TypeError, ValueError):
                 row["macro_shock_score"] = 0.0
         else:
@@ -112,7 +113,7 @@ def build_future_exog(
 
         rows.append(row)
 
-    exog_df = pd.DataFrame(rows, columns=EXOG_COLS)
+    exog_df = pd.DataFrame(rows, columns=EXOG_COLS).reset_index(drop=True)
 
     # Compute interest_rate_direction from scenario policy_rate
     if "policy_rate" in sdf.columns and macro_df is not None and len(macro_df) > 0:

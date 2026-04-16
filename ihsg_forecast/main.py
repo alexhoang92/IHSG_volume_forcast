@@ -118,8 +118,8 @@ def main():
         print(f"  --skip-fetch: loading existing {RAW_DATA_PATH}")
         daily_df = pd.read_csv(RAW_DATA_PATH, parse_dates=["date"])
     else:
-        from fetch_data import fetch_ihsg_daily
-        daily_df = fetch_ihsg_daily()
+        from fetch_data import fetch_ihsg_incremental
+        daily_df = fetch_ihsg_incremental()
 
     # ── STEP 2: Load macro input ───────────────────────────────────────────
     print("\n[STEP 2/10] Loading macro shock input ...")
@@ -152,11 +152,35 @@ def main():
     print("\n[STEP 4/10] Fitting Model 1 (SARIMAX) ...")
     from models.model1_volume import fit_model1
     fitted1 = fit_model1(weekly_df)
+    _model_notes = {
+        "m1_aic": getattr(fitted1, "aic", None),
+        "m1_bic": getattr(fitted1, "bic", None),
+    }
 
     # ── STEP 5: Fit Model 2 ────────────────────────────────────────────────
     print("\n[STEP 5/10] Fitting Model 2 (Negative Binomial) ...")
     from models.model2_users import fit_model2, compute_ipo_impact_analysis
     fitted2_dict, sig_lags, used_synthetic = fit_model2(weekly_df)
+
+    # Collect Model 2 metadata for summary notes
+    _result2 = fitted2_dict.get("result") if isinstance(fitted2_dict, dict) else fitted2_dict
+    _pseudo_r2 = None
+    if _result2 is not None and hasattr(_result2, "llf") and hasattr(_result2, "llnull") and _result2.llnull:
+        _pseudo_r2 = 1 - (_result2.llf / _result2.llnull)
+    _m2_type = "Poisson GLM (NegBinomial fallback)" if "poisson" in str(type(_result2)).lower() else "Negative Binomial"
+    _ipo_warning = any(
+        fitted2_dict.get("result").params.get(c, 0) < 0
+        for c in ["ipo_announcement_week", "ipo_effect_week_1"]
+        if hasattr(fitted2_dict.get("result", object()), "params")
+        and c in getattr(fitted2_dict.get("result"), "params", {})
+    ) if isinstance(fitted2_dict, dict) else False
+    _na_count = int(weekly_df["new_accounts"].isna().sum()) if "new_accounts" in weekly_df.columns else 0
+    _model_notes.update({
+        "m2_model_type":        _m2_type,
+        "m2_pseudo_r2":         _pseudo_r2,
+        "ipo_warning":          _ipo_warning,
+        "new_accounts_nan_count": _na_count,
+    })
 
     # Run IPO impact analysis on the training period
     if not args.no_ipo and ipo_df is not None and len(ipo_df) > 0:
@@ -200,8 +224,9 @@ def main():
 
     # ── STEP 7: Save forecast CSVs ─────────────────────────────────────────
     print("\n[STEP 7/10] Saving forward forecast CSV(s) ...")
-    from scenarios.scenario_output import save_scenario_forecasts
+    from scenarios.scenario_output import save_scenario_forecasts, save_forecast_summary_table
     save_scenario_forecasts(all_vol_forecasts, all_acct_forecasts)
+    save_forecast_summary_table(all_vol_forecasts, all_acct_forecasts, _model_notes)
 
     # Print human-readable summary for BASE (or first) scenario
     base_name = "BASE" if "BASE" in all_vol_forecasts else list(all_vol_forecasts.keys())[0]
@@ -225,7 +250,18 @@ def main():
     if not args.forecast_only:
         print("\n[STEP 8/10] Running 3-cycle rolling backtest ...")
         from backtest.backtest_engine import run_backtest
-        run_backtest(weekly_df)
+        bt_results = run_backtest(weekly_df)
+
+        # Update summary table with backtest MAPE per cycle
+        if bt_results is not None and len(bt_results) > 0:
+            mapes = []
+            for cyc in sorted(bt_results["cycle"].unique()):
+                grp = bt_results[bt_results["cycle"] == cyc]
+                errs = grp["error_vol_pct"].dropna()
+                mapes.append(float(errs.abs().mean()) if len(errs) > 0 else None)
+            _model_notes["backtest_mape"] = mapes
+            save_forecast_summary_table(all_vol_forecasts, all_acct_forecasts, _model_notes)
+            print("  Summary table updated with backtest MAPE.")
 
         print("\n[STEP 9/10] Charts generated during backtest (see outputs/charts/).")
         print("\n[STEP 10/10] Summary report generated (see outputs/reports/).")

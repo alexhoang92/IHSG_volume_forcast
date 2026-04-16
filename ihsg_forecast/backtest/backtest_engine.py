@@ -215,7 +215,7 @@ def run_backtest(weekly_df: pd.DataFrame) -> pd.DataFrame:
     print(f"\n  Backtest results saved → {BACKTEST_RESULTS_PATH}")
 
     _save_backtest_summary(cycle_metrics)
-    _plot_backtest_results(results_df, weekly_df)
+    _plot_backtest_results(results_df, weekly_df, cycle_metrics)
 
     return results_df
 
@@ -270,11 +270,115 @@ def _save_backtest_summary(cycle_metrics: list):
     print(f"  Summary report saved → {REPORT_PATH}")
 
 
+# ── CI clip helper (mirrors scenario_output.py) ──────────────────────────────
+_CI_CLIP_DELTA = 1.5
+
+def _clip_ci_bt(forecast_lv, lower, upper):
+    lo = np.maximum(lower, forecast_lv - _CI_CLIP_DELTA)
+    hi = np.minimum(upper, forecast_lv + _CI_CLIP_DELTA)
+    return lo, hi
+
+
 # ── Visualisations ────────────────────────────────────────────────────────────
 
-def _plot_backtest_results(results_df: pd.DataFrame, weekly_df: pd.DataFrame):
+def _plot_combined_backtest(results_df: pd.DataFrame, weekly_df: pd.DataFrame,
+                            cycle_metrics: list):
+    """
+    Combined 2-panel backtest chart for both Model 1 (volume) and Model 2 (new accounts).
+    Saves to outputs/charts/backtest_combined.png.
+    """
     os.makedirs(CHARTS_DIR, exist_ok=True)
     cycle_colors = {1: COLORS["cycle1"], 2: COLORS["cycle2"], 3: COLORS["cycle3"]}
+
+    try:
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10), sharex=False)
+
+        # ── Panel A: Volume (IDR Bn) ────────────────────────────────────────
+        # Full history anchor
+        ax1.plot(
+            weekly_df["week_end_date"],
+            np.exp(weekly_df["log_volume"]) / 1e9,
+            color=COLORS["actual"], linewidth=1.8, label="Actual (full history)", zorder=5,
+        )
+
+        for cyc, grp in results_df.groupby("cycle"):
+            color = cycle_colors.get(cyc, "#555555")
+            # Forecast line
+            ax1.plot(grp["week_end_date"], grp["forecast_volume"] / 1e9,
+                     color=color, linestyle="--", linewidth=1.8,
+                     label=f"Forecast — Cycle {cyc}", zorder=4)
+            # Clipped CI band
+            lo_c, hi_c = _clip_ci_bt(
+                grp["forecast_log_volume"].values,
+                grp["lower_ci"].values,
+                grp["upper_ci"].values,
+            )
+            ax1.fill_between(
+                grp["week_end_date"],
+                np.exp(lo_c) * grp["trading_days"].values / 1e9,
+                np.exp(hi_c) * grp["trading_days"].values / 1e9,
+                color=color, alpha=0.15, zorder=3,
+            )
+            # Cycle start marker
+            ax1.axvline(grp["week_end_date"].iloc[0], color=color, linestyle=":", alpha=0.6)
+
+            # Annotate MAPE on chart
+            cm = cycle_metrics[cyc - 1] if cyc - 1 < len(cycle_metrics) else None
+            if cm and cm.get("mape") is not None:
+                mid_date = grp["week_end_date"].iloc[len(grp) // 2]
+                y_pos = (np.exp(grp["forecast_log_volume"]) * grp["trading_days"] / 1e9).mean()
+                ax1.annotate(f"MAPE {cm['mape']:.1f}%",
+                             xy=(mid_date, y_pos),
+                             fontsize=8, color=color,
+                             xytext=(4, 8), textcoords="offset points")
+
+        ax1.set_title("Model 1 — Weekly Volume Backtest: Forecast vs Actual (3 cycles × 2 months)",
+                      fontsize=11, fontweight="bold")
+        ax1.set_ylabel("Volume (IDR Billion)", fontsize=10)
+        ax1.legend(fontsize=8, loc="upper left")
+        ax1.tick_params(axis="x", rotation=30)
+
+        # ── Panel B: New Accounts ───────────────────────────────────────────
+        for cyc, grp in results_df.groupby("cycle"):
+            color = cycle_colors.get(cyc, "#555555")
+            # Check for sane actual values (guard against cycle 2 overflow)
+            actuals = pd.to_numeric(grp["actual_new_accounts"], errors="coerce")
+            forecasts = pd.to_numeric(grp["forecast_new_accounts"], errors="coerce")
+            max_sane = 2e6  # cap at 2 million to exclude overflow rows
+            mask = actuals.abs() < max_sane
+            if mask.sum() == 0:
+                continue
+            ax2.bar(grp.loc[mask, "week_end_date"], actuals[mask],
+                    color=color, alpha=0.35, width=5, label=f"Actual — Cycle {cyc}", zorder=2)
+            ax2.plot(grp.loc[mask, "week_end_date"], forecasts[mask],
+                     color=color, linestyle="--", linewidth=1.8,
+                     label=f"Forecast — Cycle {cyc}", zorder=4)
+            ax2.axvline(grp["week_end_date"].iloc[0], color=color, linestyle=":", alpha=0.6)
+
+        ax2.set_title("Model 2 — New Account Registrations Backtest: Forecast vs Actual",
+                      fontsize=11, fontweight="bold")
+        ax2.set_xlabel("Week End Date", fontsize=10)
+        ax2.set_ylabel("New Accounts", fontsize=10)
+        ax2.legend(fontsize=8, loc="upper left")
+        ax2.tick_params(axis="x", rotation=30)
+
+        fig.tight_layout(pad=2.0)
+        path = os.path.join(CHARTS_DIR, "backtest_combined.png")
+        fig.savefig(path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+        print(f"  Chart saved → {path}")
+
+    except Exception as e:
+        print(f"  WARNING: Combined backtest chart failed: {e}")
+
+
+def _plot_backtest_results(results_df: pd.DataFrame, weekly_df: pd.DataFrame,
+                           cycle_metrics: list = None):
+    os.makedirs(CHARTS_DIR, exist_ok=True)
+    cycle_colors = {1: COLORS["cycle1"], 2: COLORS["cycle2"], 3: COLORS["cycle3"]}
+
+    # Combined chart first (the primary deliverable)
+    _plot_combined_backtest(results_df, weekly_df, cycle_metrics or [])
 
     # ── Chart 1 — Log volume forecast vs actual ─────────────────────────────
     try:

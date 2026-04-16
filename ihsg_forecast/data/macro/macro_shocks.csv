@@ -1,0 +1,172 @@
+week_end_date,event_description,shock_score,event_type,policy_rate,new_accounts
+2023-01-06,China reopens borders; foreign net selling persists; coal prices decline from 2022 peaks,-0.5,trade,5.5,21077
+2023-01-13,Persistent foreign outflows (~Rp1.7T first week); coal price weakness weighs on IHSG,-0.5,trade,5.5,19216
+2023-01-20,BI hikes 25bps to 5.75% (final hike); focus on rupiah stability and anchoring inflation,-0.5,monetary_policy,5.75,19776
+2023-01-27,"China reopening optimism lifts commodity demand expectations (coal, palm oil, nickel)",0.5,trade,5.75,18859
+2023-02-03,Fed hikes 25bps to 4.50-4.75%; smallest increment since Mar 2022; dovish tilt,0.5,monetary_policy,5.75,22489
+2023-02-10,Indonesia Q4 2022 GDP at 5.01% y/y; FY2022 at 5.31%; US Jan NFP surges 517K reigniting hawkish fears,-,,5.75,23171
+2023-02-17,BI holds at 5.75%; US Jan CPI hotter than expected weighs on EM sentiment,-,monetary_policy,5.75,28785
+2023-02-24,Strong US data reinforces higher-for-longer; USD strengthens; EM outflows including Indonesia,-0.5,monetary_policy,5.75,24650
+2023-03-03,Fed Chair Powell hawkish testimony; offset by China PMI recovery into expansion,-,,5.75,21112
+2023-03-10,Silicon Valley Bank collapses (Mar 10); Signature Bank follows; global risk-off,-1.5,corporate,5.75,19906
+2023-03-17,Credit Suisse crisis; IHSG hits 2023 low 6566; BI holds at 5.75%; UBS emergency rescue,-2,corporate,5.75,19678
+2023-03-24,Fed hikes 25bps but signals potential pause; banking crisis fears ease; IHSG rebounds,1,monetary_policy,5.75,17766
+2023-03-31,Banking crisis contained; foreign inflows resume (Rp4T net buy); BI export proceed rule supports IDR,1,,5.75,21334
+2023-04-07,OPEC+ surprise production cut 1.16M bpd; boosts oil and commodity complex,0.5,trade,5.75,21242
+2023-04-14,Pre-Ramadan consumption boost; retail sales strengthen; CPI declining toward 4.3%,0.5,,5.75,24054
+2023-04-21,Eid al-Fitr holidays; IDX closed for extended collective leave; limited trading,-,,5.75,36495
+2023-04-28,Post-Eid market reopens; BI holds at 5.75%; Q1 banking earnings solid,0.5,,5.75,39556
+2023-05-05,Fed hikes 25bps to 5.00-5.25%; Indonesia Q1 GDP at 5.03%; First Republic Bank seized,-0.5,monetary_policy,5.75,29210
+2023-05-12,US debt ceiling anxiety builds; Treasury warns potential default by Jun 1,-0.5,geopolitical,5.75,36718
+2023-05-19,US debt ceiling talks stall; dollar strengthens; rupiah under pressure,-0.5,geopolitical,5.75,24077
+2023-05-26,Peak US debt ceiling crisis; Fitch places US AAA on negative watch; BI holds at 5.75%,-1,geopolitical,5.75,31960
+2023-06-02,US debt ceiling deal reached (Fiscal Responsibility Act signed); Indonesia bauxite export ban takes effect,0.5,geopolitical,5.75,30779
+2023-06-09,Post-debt-ceiling stabilization; commodity prices mixed; trade surplus narrowing,0.5,,5.75,24479
+2023-06-16,Fed pauses rate hikes (held 5.00-5.25%); first skip since Mar 2022; significant EM relief rally,1,monetary_policy,5.75,25533
+2023-06-23,BI holds at 5.75%; Indonesia May trade surplus $4.4B; sideways trading with thin volumes,-,monetary_policy,5.75,20457
+2023-06-30,IHSG closes H1 ~2.5-3% below year-open; challenging first half,-0.5,,5.75,19912
+2023-07-07,H2 recovery begins; June CPI at 3.52% y/y continues disinflationary trend,0.5,,5.75,21945
+2023-07-14,Q2 earnings season begins; banking sector expected strong results; risk appetite improves,0.5,corporate,5.75,20636
+2023-07-21,Anticipation of Fed and BI decisions; credit growth healthy at ~8% y/y,-,,5.75,22047
+2023-07-28,Fed hikes 25bps to 5.25-5.50% widely seen as final hike; BoJ tweaks YCC policy,-,monetary_policy,5.75,23107
+2023-08-04,Fitch downgrades US credit AAA to AA+; US Treasury $1T Q3 borrowing; EM outflows accelerate,-1,geopolitical,5.75,24803
+2023-08-11,Indonesia Q2 GDP at 5.17% y/y beats expectations on strong domestic consumption,1,,5.75,22273
+2023-08-18,US yields creep higher (10Y near 4.3%); El Nino concerns affect rice prices,-,,5.75,20935
+2023-08-25,Jackson Hole: Powell signals proceed carefully but keeps door open; Rp24T monthly foreign outflows,-0.5,monetary_policy,5.75,22769
+2023-09-01,Indonesia Aug CPI at 2.28% y/y (lowest since Feb 2022); trade surplus positive but narrowing,-,,5.75,24865
+2023-09-08,IHSG approaching 7000 resistance; Brent oil above $90 on Saudi-Russia supply cuts,-,,5.75,28704
+2023-09-15,IHSG briefly breaks above 7000; Indonesia Carbon Exchange inaugurated; bank lending >9%,0.5,,5.75,22091
+2023-09-22,Fed holds but hawkish dot plot: higher-for-longer fewer 2024 cuts; BI holds at 5.75%; US 10Y above 4.4%,-0.5,monetary_policy,5.75,25554
+2023-09-29,IHSG falls back below 7000; US 10Y surging toward 4.6%; end-quarter profit-taking,-0.5,monetary_policy,5.75,21011
+2023-10-06,US 10Y approaches 4.8%; continued risk-off; oil elevated above $90; rupiah under pressure,-0.5,monetary_policy,5.75,28094
+2023-10-13,Israel-Hamas war erupts (Oct 7); oil spikes on Middle East supply fears; geopolitical risk premium surges,-1.5,geopolitical,5.75,26739
+2023-10-20,BI surprise hike 25bps to 6.00% to defend rupiah; US 10Y nearing 5%; presidential candidate registration opens,-1,monetary_policy,6,28698
+2023-10-27,US 10Y touches ~5.0% highest since 2007; Prabowo-Gibran register; peak EM fear,-1.5,monetary_policy,6,25175
+2023-11-03,Fed holds; Powell slightly less hawkish; US 10Y retreats from 5%; IHSG surges +1.6% starting Nov-Dec rally,1.5,monetary_policy,6,28070
+2023-11-10,Indonesia Q3 GDP at 4.94% y/y; US 10Y back below 4.65%; peak rates narrative gaining traction,1,,6,24804
+2023-11-17,IHSG breaks above 7000; US Oct CPI confirms disinflation; foreign bond inflows resume (Rp16T monthly),1.5,,6,22942
+2023-11-24,Rally continues; BI holds at 6.00%; all three presidential pairs certified; election clarity supportive,1,monetary_policy,6,21191
+2023-12-01,Presidential campaign officially begins (Nov 28); election spending expected to boost consumption,0.5,geopolitical,6,25236
+2023-12-08,Pre-first-presidential-debate positioning; Indonesia PMI above 50; year-end portfolio rebalancing,-,,6,38825
+2023-12-15,Fed holds and pivots dovish: dot plot shows 3 cuts in 2024; first presidential debate Dec 12; Prabowo performs well,2,monetary_policy,6,44329
+2023-12-22,IHSG touches ~7318 near ATH; Santa rally; record market cap Rp11762T; global risk-on from Fed pivot,1,,6,37394
+2023-12-29,Year-end profit-taking; IHSG closes 2023 at 7272.80 (+6.16% FY); BI holds at 6.00%; record 79 IPOs,-,,6,35841
+2024-01-05,New year optimism; IHSG hits ATH 7323 (Jan 2) surpassing Sep 2022 record; global rate-cut hopium,1,,6,39887
+2024-01-12,IHSG extends ATH to ~7360; bank stocks lead on Q4 earnings expectations; EM risk-on continues,0.5,,6,38211
+2024-01-19,BI holds at 6.00%; IHSG near ATH; pre-election premium building; Prabowo leads polls,0.5,monetary_policy,6,38831
+2024-01-26,Profit-taking from ATH; US data stronger than expected; Fed rate-cut expectations moderating,-0.5,,6,44051
+2024-02-02,Fed holds at 5.25-5.50%; Powell pushes back on March cut; US Jan NFP surges 353K,-0.5,monetary_policy,6,44590
+2024-02-09,Pre-election caution; some de-risking ahead of Feb 14 vote; Prabowo favored,-0.5,geopolitical,6,28977
+2024-02-16,Prabowo-Gibran win presidential election ~58.6%; IHSG surges +1.3-2.2%; policy continuity cheered,1.5,geopolitical,6,32974
+2024-02-23,Post-election consolidation; BI holds at 6.00%; opposition challenges filed but no systemic fraud,0.5,monetary_policy,6,48851
+2024-03-01,Wait-and-see ahead of official election certification; Prabowo builds broad coalition,-,,6,45644
+2024-03-08,Cabinet speculation; Prabowo free meals program (~Rp400T) draws fiscal scrutiny from investors,-,,6,39128
+2024-03-15,Ramadan begins; seasonal consumption boost; Fed holds maintains 3-cut projection for 2024,0.5,,6,32775
+2024-03-22,Official election results confirmed; Prabowo-Gibran declared winners; BI holds at 6.00%; CPI at 3.05%,0.5,geopolitical,6,30198
+2024-03-29,End-of-quarter positioning; US PCE slightly above expectations; rupiah weakening to 15800-15900,-0.5,,6,34184
+2024-04-05,Israel strikes Iranian consulate in Damascus killing senior IRGC commanders; oil spikes,-1,geopolitical,6,32398
+2024-04-12,IDX closed for Eid al-Fitr; Iran launches massive drone/missile attack on Israel overnight Apr 13-14,-1.5,geopolitical,6,32167
+2024-04-19,IHSG gaps lower on post-Eid reopening; foreign outflows Rp15T; rupiah hits 16200; DXY at 106,-2,geopolitical,6,47851
+2024-04-26,BI surprise hike 25bps to 6.25% to defend rupiah; Iran conflict de-escalates,-0.5,monetary_policy,6.25,37284
+2024-05-03,Fed holds at 5.25-5.50%; Powell less hawkish than feared; rupiah stabilizes around 16100-16200,0.5,monetary_policy,6.25,35558
+2024-05-10,Indonesia Q1 GDP at 5.11% y/y beats consensus; economy boosted by election spending and Ramadan,1,,6.25,29820
+2024-05-17,Consolidation; US PPI/CPI mixed; foreign outflows slow but continue; nickel under pressure,-0.5,,6.25,27145
+2024-05-24,BI holds at 6.25%; hawkish hold; SRBI foreign holdings jump from Rp72T to Rp143T,-,monetary_policy,6.25,25305
+2024-05-31,US 10Y above 4.6% pressures EM; rupiah drifts weaker; Indonesia May CPI 2.84%; trade surplus $2.9B,-0.5,,6.25,24864
+2024-06-07,Stronger USD weighs on EM broadly; rupiah weakens past 16300; BI intervention intensifies,-0.5,,6.25,24231
+2024-06-14,Fed holds; dot plot revised to signal only 1 cut in 2024 (from 3 in Mar); hawkish surprise,-1,monetary_policy,6.25,23669
+2024-06-21,BI holds at 6.25%; hawkish hold emphasizes rupiah stability; signals possible further hike,-0.5,monetary_policy,6.25,19018
+2024-06-28,IHSG ends H1 2024 down ~2-3% YTD; rupiah at ~16300; significant H1 foreign equity outflows,-0.5,,6.25,22181
+2024-07-05,Recovery from June lows begins; domestic economy stable; Indonesia CPI benign at ~2.1%,0.5,,6.25,23983
+2024-07-12,Recovery continues; Indonesia trade surplus supportive; US tech rally supports EM risk appetite,0.5,,6.25,23811
+2024-07-19,BI holds at 6.25%; steady climb; rate-cut cycle expectations building globally,0.5,monetary_policy,6.25,22379
+2024-07-26,Early signs of yen carry-trade unwinding; BoJ intervention rumors; US tech sells off ~$1T,-0.5,monetary_policy,6.25,21399
+2024-08-02,BoJ hikes to 0.25% triggering carry-trade unwind; US Jul NFP weak at 114K; yen surges 6%,-1,monetary_policy,6.25,20938
+2024-08-09,Global Black Monday (Aug 5): Nikkei -12.4% IHSG -3.4%; carry-trade unwind ~$4T; partial recovery,-1.5,monetary_policy,6.25,22298
+2024-08-16,Massive V-shaped recovery; IHSG sets new ATH at 7436; rate-cut expectations surge,1.5,,6.25,21548
+2024-08-23,Rally continues; Fed Sep cut firmly priced; BI Governor hints at rate cut; low inflation gives BI room,1,monetary_policy,6.25,20590
+2024-08-30,IHSG at ~7671 (+4.7% for Aug); strong capital inflows; record FX reserves,1,,6.25,24395
+2024-09-06,IHSG continues advance; Indonesia CPI benign at 2.12%; global rate-cut expectations intensify,0.5,,6.25,25747
+2024-09-13,IHSG sets new ATH 7833 intraday; 10Y bond yield falls to 6.56%,0.5,,6.25,24735
+2024-09-20,Landmark: BI cuts 25bps to 6.00%; Fed cuts 50bps to 4.75-5.00%; IHSG ATH 7905,2,monetary_policy,6,24178
+2024-09-27,China stimulus shock (Sep 24): PBOC massive easing triggers 30%+ rally; funds rotate from ASEAN to China,-1,monetary_policy,6,24515
+2024-10-04,China rotation intensifies; CSI 300 soars; foreign outflows from Indonesia; Israel-Hezbollah tensions,-1,trade,6,27604
+2024-10-11,Continued foreign selling; China MoF fiscal briefing disappoints; Indonesia PMI slips into contraction,-0.5,,6,23224
+2024-10-18,BI holds at 6.00%; cautious stance; Prabowo inauguration approaching,-,monetary_policy,6,23342
+2024-10-25,Prabowo inaugurated as 8th President; 48-minister cabinet formed; Danantara SWF concept announced,0.5,geopolitical,6,24469
+2024-11-01,Pre-US election anxiety; Indonesia Q3 GDP decelerates to 4.95%; manufacturing PMI in contraction,-0.5,,6,24040
+2024-11-08,Trump wins US election (Nov 5); USD surges EM sells off; IHSG -1.4%; Fed cuts 25bps to 4.50-4.75%,-1.5,geopolitical,6,28362
+2024-11-15,Trump Trade hammering EM; 4th week of foreign outflows ($261M); IHSG falls to 7161,-1,trade,6,29488
+2024-11-22,BI holds at 6.00% despite Fed cut; cites rupiah stabilization priority; bearish sentiment,-0.5,monetary_policy,6,28307
+2024-11-29,Continued weakness; Nov CPI very low at 1.55%; PMI contracts 5th month; VAT 12% debate,-0.5,,6,31611
+2024-12-06,Sharp technical rebound: IHSG +3.34% to 7383 best week since Sep; oversold bounce,1,,6,33855
+2024-12-13,Rebound fades; Trump tariff rhetoric intensifies; capital outflows resume (~Rp5.1T weekly),-0.5,trade,6,29313
+2024-12-20,BI holds at 6.00%; Fed hawkish cut 25bps signals fewer 2025 cuts; anti-corruption raid on BI,-1,monetary_policy,6,27292
+2024-12-27,Year-end thin trading; IHSG drifts to ~7050; VAT 12% luxury goods only; Danantara delayed to Feb,-0.5,,6,22498
+2025-01-03,First trading day: IHSG opens 2025 at ~7163 (+1.2%); modest New Year optimism,0.5,,6,25182
+2025-01-10,Dec 2024 CPI at 1.57%; FY2024 GDP confirmed at 5.03%; Coretax system launch causes tax disruption,-0.5,,6,32132
+2025-01-17,BI surprise cut 25bps to 5.75% defying consensus; pro-growth pivot; rupiah weakens post-announcement,-,monetary_policy,5.75,41368
+2025-01-24,Trump inaugurated (Jan 20); signals aggressive trade policy; rupiah weakens to 16170; EM anxiety,-1,geopolitical,5.75,35252
+2025-01-31,DeepSeek AI shock crashes global tech (Nvidia -17%); muted IHSG impact; Chinese New Year; Jan foreign outflows ~Rp11T,-0.5,,5.75,27152
+2025-02-07,Banking stocks weaken; Coretax failures cut tax revenue ~30% y/y; Rp750T austerity; student protests,-1,,5.75,33222
+2025-02-14,MSCI skips adding large Indonesian stocks; Trump signs reciprocal tariff memo; Danantara governance fears,-1,trade,5.75,26774
+2025-02-21,BI holds at 5.75%; Morgan Stanley and Goldman Sachs downgrade Indonesia to underweight; IHSG -4.1% YTD,-1.5,,5.75,26090
+2025-02-28,Danantara SWF launched Feb 24; IHSG crashes 7.1% in 4 days to 6271; foreign outflows $623M; 1MDB comparisons,-2,geopolitical,5.75,28463
+2025-03-07,Partial stabilization from oversold levels; BI intervenes in FX; Danantara announces $20B in 20 projects,0.5,,5.75,29354
+2025-03-14,Sri Mulyani resignation rumors; LPEM UI survey: 55% economists say conditions worsened; NPLs rise to 2.17%,-0.5,geopolitical,5.75,26833
+2025-03-21,Trading halt triggered Mar 18 as IHSG crashes -6.12% to 6076; DCII/BREN manipulation; BI holds at 5.75%,-1.5,corporate,5.75,30882
+2025-03-28,Strong rebound +4.03%; pre-Eid buying; new 15% free-float rule announced; IHSG recovers to 6511,1,,5.75,32872
+2025-04-04,Trump Liberation Day tariffs (Apr 2): 32% reciprocal tariff on Indonesia; IDX closed for Eid holiday,-2,trade,5.75,32757
+2025-04-11,IDX reopens Apr 8 IHSG crashes to ~5996; Trump announces 90-day tariff pause (Apr 9); relief rally to ~6300,1,trade,5.75,76359
+2025-04-18,Indonesian delegation visits Washington for tariff mitigation talks; cautious optimism; rupiah volatile,0.5,trade,5.75,72813
+2025-04-25,BI holds at 5.75%; Q1 GDP at 4.87% slowest in 3 years; BI signals potential H2 cut,-0.5,monetary_policy,5.75,55215
+2025-05-02,Market consolidates; Indonesia pursues quiet diplomacy; free-float regulation in effect,-,,5.75,46855
+2025-05-09,Indonesia-US negotiation progress; Prabowo pushes elimination of trade barriers,0.5,trade,5.75,49184
+2025-05-16,US-China tariff truce (May 12): US tariffs on China cut to 30% China to 10% for 90 days; massive relief rally,1.5,trade,5.75,42732
+2025-05-23,BI cuts 25bps to 5.50%; first cut since January; US-China truce gives BI room; GDP forecast revised,1,monetary_policy,5.5,52895
+2025-05-30,Market momentum continues; trade diversification underway; domestic consumption resilient,0.5,,5.5,43800
+2025-06-06,Trade diversification via RCEP and EU FTA acceleration; PMI near expansion line; inflation benign,-,,5.5,39007
+2025-06-13,Global markets rally; S&P 500 recovering pre-tariff levels; positive spillover to EM including Indonesia,0.5,,5.5,50593
+2025-06-20,BI holds at 5.50%; dovish hold signals H2 rate reduction; Middle East tensions constrain action,-,monetary_policy,5.5,68749
+2025-06-27,S&P 500 and Nasdaq close at ATH; global risk-on sentiment lifts IHSG toward 7300,1,,5.5,66853
+2025-07-04,Indonesia-US negotiations intensify ahead of tariff pause expiry,-,trade,5.5,57551
+2025-07-11,Trump extends tariff deadline from Jul 9 to Aug 1; market relief,0.5,trade,5.5,71822
+2025-07-18,Trump announces Indonesia trade deal: tariff cut from 32% to 19%; BI cuts 25bps to 5.25%; twin positive,2,trade,5.25,124531
+2025-07-25,US-Indonesia trade framework: Indonesia to eliminate 99% tariff barriers; Q2 GDP at 5.12% (2-year high),1.5,trade,5.25,117266
+2025-08-01,Trump signs order: reciprocal tariffs resume Aug 7 at modified rates; Indonesia at 19%,-0.5,trade,5.25,109395
+2025-08-08,Reciprocal tariffs resume at 19% for Indonesia; pre-shipment surge absorbs impact,-,trade,5.25,97882
+2025-08-15,Government announces ~$1B Q4 stimulus; Jul inflation benign; IHSG breaks above Sep 2024 ATH of 7905,0.5,,5.25,74718
+2025-08-22,BI surprise cut 25bps to 5.00%; only 9/39 economists expected; all-out pro-growth pivot,1.5,monetary_policy,5,71364
+2025-08-29,Federal Circuit upholds: IEEPA tariffs declared unlawful; Trump appeals to SCOTUS,0.5,trade,5,88306
+2025-09-05,Exports surge 9.91% y/y; FDI strong; Indonesia joins BRICS,0.5,trade,5,97407
+2025-09-12,US recession fears diminish; banking sector liquidity boosted by Rp200T government deposit,0.5,,5,139967
+2025-09-19,BI surprise cut 25bps to 4.75% lowest since Oct 2022; ~$1B additional government stimulus,1.5,monetary_policy,4.75,203310
+2025-09-26,Rate cut transmission expectations build; IHSG testing 8100-8200; some profit-taking,0.5,,4.75,173569
+2025-10-03,Credit growth at 7.56% y/y; government finalizing Q4 fiscal stimulus (IDR 24.4T),-,,4.75,146052
+2025-10-10,PMI in contraction; foreign SRBI holdings declining sharply; domestic investors increasingly dominant,-0.5,,4.75,165766
+2025-10-17,Q3 GDP at 5.04% y/y maintains above-5% trajectory; trade deal framework supporting confidence,0.5,,4.75,146634
+2025-10-24,BI surprise hold at 4.75%; pauses to assess transmission and guard rupiah amid $5.3B net outflows,-0.5,monetary_policy,4.75,133766
+2025-10-31,Profit-taking; food inflation rises to 6.6% y/y; government considers 2026 budget deficit cap review,-0.5,,4.75,116330
+2025-11-07,SCOTUS oral arguments on IEEPA tariff case; global uncertainty moderates,-,trade,4.75,141835
+2025-11-14,Credit growth improves to 7.74% y/y; BI liquidity measures starting to transmit,-,,4.75,159872
+2025-11-21,BI holds at 4.75%; rupiah depreciated 0.69% in month; BI purchased IDR 327T in govt bonds through 2025,-,monetary_policy,4.75,121798
+2025-11-28,Prabowo at BI Annual Meeting emphasizes self-reliance; FDI up 11% y/y to $38.1B (Jan-Sep),0.5,,4.75,152189
+2025-12-05,Nov inflation eases to 2.72%; year-end rally; domestic retail investor base reaches 19M accounts,0.5,,4.75,151250
+2025-12-12,Year-end momentum; global trade landscape stabilizing; IHSG approaching 8550; 2025 GDP tracking ~5.1%,0.5,,4.75,178238
+2025-12-19,BI holds at 4.75%; signals room for 2026 cuts; projects 2026 GDP at 4.9-5.7%; dovish tone,0.5,monetary_policy,4.75,215515
+2025-12-26,Christmas shortened trading; IHSG near year high ~8650; FY2025 GDP at 5.11%,0.5,,4.75,196680
+2026-01-02,Year-end/New Year holiday; IHSG closes 2025 at ~8644 (+22% for year); light volumes,-,,4.75,201752
+2026-01-09,IHSG hits new ATH 8748; Jan CPI rises to 3.55% highest since May 2023; BI independence concerns,0.5,,4.75,331332
+2026-01-16,IHSG rallies toward ~9100; strong domestic sentiment; market at/near record highs,1,,4.75,219665
+2026-01-23,BI holds at 4.75%; rupiah weakens 1.53%; Prabowo nominates nephew as BI deputy (independence concern),-0.5,monetary_policy,4.75,190549
+2026-01-30,MSCI crisis: freezes Indonesian index changes over transparency; IHSG crashes ~11.5%; trading halts; IDX/OJK chiefs resign,-2,corporate,4.75,220817
+2026-02-06,Post-MSCI crisis: IHSG stabilizes near ~7900; Moody's cuts Indonesia outlook to negative; Q4 2025 GDP 5.4% overshadowed,-1,,4.75,192956
+2026-02-13,Government reform: higher free float (15%) enhanced ownership disclosure; KSEI expands investor classification,0.5,corporate,4.75,135479
+2026-02-20,US-Indonesia trade deal formally signed; SCOTUS strikes IEEPA tariffs 6-3; BI holds at 4.75%,1.5,trade,4.75,106564
+2026-02-27,IEEPA tariffs replaced by 10% Section 122; US-Israeli coalition attacks Iran starting 2026 Iran War,-0.5,geopolitical,4.75,100956
+2026-03-06,Iran War escalates; Strait of Hormuz closed oil surges past $120; Fitch cuts Indonesia outlook to negative,-2,geopolitical,4.75,109551
+2026-03-13,Iran war disruptions deepen; LNG supply disrupted; rupiah to record lows ~17100; FX reserves fall to $148.2B,-1.5,geopolitical,4.75,94873
+2026-03-20,Eid al-Fitr holiday IDX closed; global markets grapple with Iran war; BI holds at 4.75%; Feb inflation surges 4.76%,-1,geopolitical,4.75,77895
+2026-03-27,IDX reopens absorbing war news; biggest foreign outflow in 21 years; IHSG falls to ~7027; Mar inflation 3.48%,-1.5,geopolitical,4.75,110366
+2026-04-03,Continued selling; IHSG at ~7027; foreign selling ~Rp2.94T; US-Iran tensions escalate; 4/8 MSCI reforms done,-1,geopolitical,4.75,107616
+2026-04-10,US-Iran ceasefire announced (~Apr 8-9); massive relief rally: IHSG surges ~6% to 7458; peace euphoria,1.5,geopolitical,4.75,123009

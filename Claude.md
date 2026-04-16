@@ -621,3 +621,111 @@ outputs/charts/backtest_error_distribution.png
 - **Print progress** at each major step using a consistent format: `[STEP N/10] Description...`
 - **Model 2 is clearly labelled as demonstration** if no real `new_accounts` data is provided.
 - Keep all modules independently importable — `fetch_data.py` should work without importing `models/`.
+
+## New task for Model 2
+The codebase already handles log_trading_days and has a fully working two-model forecasting pipeline (Model 1 SARIMAX for weekly IHSG volume, Model 2 Negative Binomial for new brokerage account registrations). You only need to add IPO announcement effects to Model 2. Do not touch Model 1, compute_variables.py beyond what is listed here, or any backtest logic for Model 1.
+
+What to build
+1. New input file — data/ipo/ipo_calendar.csv
+Generate a blank template at data/ipo/ipo_calendar_TEMPLATE.csv with these exact columns:
+announcement_date,ticker,company_name,market_cap_idr_trillion,sector,notes
+announcement_date is the book-open or prospectus publication date — NOT the listing/trading date. Document this prominently in the template as a comment block. Add IPO_INPUT_PATH = "data/ipo/ipo_calendar.csv" to config.py.
+2. New config parameters — config.py
+Add these three parameters with the comments shown:
+python# Weeks after announcement to flag as follow-on effect
+# (subscription period + allotment — typically 1-2 weeks)
+IPO_EFFECT_WEEKS_AFTER   = 2
+
+# Min market cap (IDR trillion) to qualify as a large IPO.
+# Set to 0 to treat all IPOs equally.
+IPO_MIN_MARKET_CAP_IDR_T = 1.0
+
+IPO_INPUT_PATH = "data/ipo/ipo_calendar.csv"
+3. New function — compute_variables.py
+Add compute_ipo_dummies(weekly_df, ipo_df) at the bottom of the file. Do not modify any existing function.
+pythondef compute_ipo_dummies(weekly_df: pd.DataFrame, ipo_df: pd.DataFrame) -> pd.DataFrame:
+Logic:
+
+Initialise four new columns on weekly_df to 0: ipo_announcement_week, ipo_effect_week_1, ipo_effect_week_2, ipo_large_flag
+For each row in ipo_df, map announcement_date to its containing week's Friday using: days_to_friday = (4 - pd.Timestamp(dt).weekday()) % 7, then friday = dt + Timedelta(days=days_to_friday). If the date is already a Friday, it stays. If it falls on a weekend, it rolls to the next Friday.
+Flag ipo_announcement_week = 1 for that Friday week. Flag ipo_large_flag = 1 if market_cap_idr_trillion >= IPO_MIN_MARKET_CAP_IDR_T and is not NaN.
+Flag ipo_effect_week_1 = 1 for the Friday one week later, ipo_effect_week_2 = 1 for two weeks later.
+When multiple IPOs fall in the same week, take max (OR), not sum.
+If ipo_df is empty or None, return weekly_df with all four columns set to 0 and print a warning.
+Print on completion: [IPO] {N} IPOs loaded → {k} announcement weeks flagged ({m} large).
+
+4. Update models/model2_users.py only
+4a. Add build_model2_exog(weekly_df, selected_lags) as a new helper function. This must be the single place that assembles the exog DataFrame for both fitting and forecasting — never assemble exog columns inline anywhere else.
+Column order (fixed, do not vary):
+
+const
+lag_lv_{k} for each k in selected_lags
+volume_momentum
+cumulative_4w_return
+log_trading_days
+macro_shock_score
+weekly_return
+ipo_announcement_week
+ipo_effect_week_1
+ipo_effect_week_2
+ipo_large_flag
+
+If any IPO column is absent from weekly_df, fill it with 0 (graceful degradation when no IPO file was provided). Drop NaN rows and print retained/dropped count.
+4b. Refactor fit_model2() to call build_model2_exog() instead of assembling exog inline. Store selected_lags in the returned dict so forecast_model2() can reuse it.
+4c. Update forecast_model2() to accept a new future_ipo_df parameter (default None). Inside the function:
+
+Call compute_ipo_dummies() on the future weekly scaffold using future_ipo_df to populate the four IPO columns for the forecast horizon.
+Call build_model2_exog() with the same selected_lags from the fitted model dict — this guarantees column alignment between train and predict.
+Run prediction twice: once with IPO dummies at their computed values → forecast_new_accounts; once with all four IPO columns zeroed → baseline_new_accounts.
+Add ipo_contribution_accounts = forecast_new_accounts - baseline_new_accounts to the output DataFrame.
+For weeks where ipo_announcement_week == 1, print:   Week {date}: {N} accounts forecast, of which {M} from IPO: {ticker}.
+
+4d. After fitting, print this block:
+[Model 2] IPO coefficient summary
+  ipo_announcement_week : b = {val}  (p = {p})
+  ipo_effect_week_1     : b = {val}  (p = {p})
+  ipo_effect_week_2     : b = {val}  (p = {p})
+  ipo_large_flag        : b = {val}  (p = {p})
+If any IPO coefficient is negative, print: WARNING: negative IPO coefficient detected. Verify that announcement_date values are book-open dates, not listing dates.
+5. Add compute_ipo_impact_analysis() to models/model2_users.py
+pythondef compute_ipo_impact_analysis(fitted_model2_dict, weekly_df) -> pd.DataFrame:
+For each week where ipo_announcement_week == 1 in the fitted sample, compute:
+
+baseline_accounts: prediction with all four IPO columns zeroed
+ipo_accounts: prediction with IPO columns at observed values
+actual_accounts: from weekly_df["new_accounts"] if present, else NaN
+ipo_uplift_pct = (ipo_accounts - baseline_accounts) / baseline_accounts * 100
+
+Output columns: week_end_date, ipo_ticker, company_name, market_cap_idr_trillion, baseline_accounts, ipo_accounts, actual_accounts, ipo_uplift_pct, ipo_large_flag. Join ticker/company from the IPO calendar by matching week. Save to outputs/csv/ipo_impact_analysis.csv.
+6. Update main.py
+Add one new step between the existing macro loading step and the compute step:
+python# Load IPO calendar
+try:
+    ipo_df = pd.read_csv(IPO_INPUT_PATH, parse_dates=["announcement_date"])
+    print(f"[IPO] Loaded {len(ipo_df)} IPO records from {IPO_INPUT_PATH}")
+except FileNotFoundError:
+    print(f"WARNING: {IPO_INPUT_PATH} not found. IPO dummies will be 0.")
+    ipo_df = pd.DataFrame(columns=["announcement_date","ticker","company_name","market_cap_idr_trillion"])
+Pass ipo_df into compute_all_variables() and run_backtest(). Pass future_ipo_df (rows from ipo_df where announcement_date > today) into forecast_model2(). Add --no-ipo CLI flag that skips the file load and passes an empty DataFrame.
+After fit_model2() completes, call compute_ipo_impact_analysis() and save the result.
+7. Add one new chart to the existing chart generation code
+File: outputs/charts/ipo_effect_analysis.png. Two-panel figure using plt.style.use("seaborn-v0_8-whitegrid"):
+
+Panel A: grey bars for actual new_accounts, blue line for Model 2 fitted values, vertical orange lines at each ipo_announcement_week == 1, red star markers for ipo_large_flag == 1 weeks, each IPO annotated with its ticker (rotated 45°). Title: "New account registrations — actual vs fitted with IPO events".
+Panel B: horizontal bar chart of ipo_uplift_pct from ipo_impact_analysis.csv, amber bars for standard IPOs, coral bars for large IPOs. X-axis: "% uplift vs baseline". Title: "Estimated new-user uplift per IPO announcement".
+
+8. Update the backtest summary
+In backtest_engine.py, add two rows to the Model 2 metrics section of the printed and saved summary table:
+
+MAE — IPO weeks: MAE computed only on rows where ipo_announcement_week == 1
+MAE — non-IPO weeks: MAE computed only on rows where ipo_announcement_week == 0
+
+If no IPO weeks exist in a cycle, print n/a for that cell.
+
+Constraints
+
+Do not modify Model 1 (model1_volume.py) at all.
+Do not modify any existing variable computation functions in compute_variables.py — only add compute_ipo_dummies() at the bottom.
+Do not change the backtest cycle logic, window boundaries, or Model 1 metrics.
+The pipeline must run end-to-end with no ipo_calendar.csv present, producing identical Model 1 output and Model 2 output with all IPO columns zeroed.
+build_model2_exog() must be called in both fit_model2() and forecast_model2() — never assemble exog columns in two separate places.

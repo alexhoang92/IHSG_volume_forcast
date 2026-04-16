@@ -314,6 +314,8 @@ def compute_ipo_impact_analysis(fitted_model2_dict, weekly_df: pd.DataFrame) -> 
 
         # With IPO dummies
         X_ipo, _, _ = build_model2_exog(week_df, significant_lags)
+        if len(X_ipo) == 0:
+            continue  # skip weeks where NaN in features prevents prediction
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             pred_ipo = result_model.predict(X_ipo).values[0]
@@ -323,6 +325,8 @@ def compute_ipo_impact_analysis(fitted_model2_dict, weekly_df: pd.DataFrame) -> 
         for col in IPO_COLS:
             week_df_base[col] = 0
         X_base, _, _ = build_model2_exog(week_df_base, significant_lags)
+        if len(X_base) == 0:
+            continue
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             pred_base = result_model.predict(X_base).values[0]
