@@ -351,3 +351,70 @@ def compute_all_variables(daily_df: pd.DataFrame, macro_df: pd.DataFrame) -> pd.
     _save_formula_notes()
 
     return weekly
+
+
+# ── IPO dummy variables ───────────────────────────────────────────────────────
+
+def compute_ipo_dummies(weekly_df: pd.DataFrame, ipo_df) -> pd.DataFrame:
+    """
+    Maps each IPO announcement_date to its Friday week and adds four binary columns:
+        ipo_announcement_week  — 1 on the Friday of the announcement week
+        ipo_effect_week_1      — 1 one Friday later  (subscription period)
+        ipo_effect_week_2      — 1 two Fridays later (allotment / early trading)
+        ipo_large_flag         — 1 if market_cap_idr_trillion >= IPO_MIN_MARKET_CAP_IDR_T
+
+    Multiple IPOs in the same week are OR-combined (max, not sum).
+    If ipo_df is None or empty, all four columns are set to 0.
+    """
+    from config import IPO_MIN_MARKET_CAP_IDR_T
+
+    result = weekly_df.copy()
+    for col in ["ipo_announcement_week", "ipo_effect_week_1", "ipo_effect_week_2", "ipo_large_flag"]:
+        result[col] = 0
+
+    if ipo_df is None or len(ipo_df) == 0:
+        print("  WARNING: No IPO calendar provided — all IPO dummies set to 0.")
+        return result
+
+    # Build a mapping from Friday dates → (ann_flag, large_flag)
+    friday_ann   = {}   # friday → 1
+    friday_large = {}   # friday → 1
+
+    for _, row in ipo_df.iterrows():
+        try:
+            dt = pd.Timestamp(row["announcement_date"])
+        except Exception:
+            continue
+        # Map to containing or next Friday
+        days_to_friday = (4 - dt.weekday()) % 7
+        friday = dt + pd.Timedelta(days=days_to_friday)
+
+        friday_ann[friday] = 1
+        cap = row.get("market_cap_idr_trillion", None)
+        try:
+            cap_val = float(cap)
+            if cap_val >= IPO_MIN_MARKET_CAP_IDR_T:
+                friday_large[friday] = 1
+        except (TypeError, ValueError):
+            pass
+
+    # Apply flags to the weekly DataFrame
+    date_series = pd.to_datetime(result["week_end_date"])
+    for friday, _ in friday_ann.items():
+        mask_ann  = date_series == friday
+        mask_eff1 = date_series == (friday + pd.Timedelta(weeks=1))
+        mask_eff2 = date_series == (friday + pd.Timedelta(weeks=2))
+        result.loc[mask_ann,  "ipo_announcement_week"] = 1
+        result.loc[mask_eff1, "ipo_effect_week_1"]     = 1
+        result.loc[mask_eff2, "ipo_effect_week_2"]      = 1
+        if friday in friday_large:
+            result.loc[mask_ann,  "ipo_large_flag"] = 1
+            result.loc[mask_eff1, "ipo_large_flag"] = 1
+            result.loc[mask_eff2, "ipo_large_flag"] = 1
+
+    n_ann   = int(result["ipo_announcement_week"].sum())
+    n_large = int((result["ipo_announcement_week"] & result["ipo_large_flag"]).sum())
+    n_ipo   = len(friday_ann)
+    print(f"  [IPO] {n_ipo} IPOs loaded → {n_ann} announcement weeks flagged ({n_large} large).")
+
+    return result

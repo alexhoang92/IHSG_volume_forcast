@@ -27,3 +27,16 @@ FORECAST_PATH         = "outputs/csv/forecast_forward.csv"
 BACKTEST_RESULTS_PATH = "outputs/csv/backtest_results.csv"
 REPORT_PATH           = "outputs/reports/backtest_summary.txt"
 CHARTS_DIR            = "outputs/charts"
+
+# ── IPO calendar ──────────────────────────────────────────────────────────────
+IPO_INPUT_PATH           = "data/ipo/ipo_calendar.csv"
+IPO_TEMPLATE_PATH        = "data/ipo/ipo_calendar_TEMPLATE.csv"
+# Weeks after announcement date to flag as follow-on subscription/allotment effect
+IPO_EFFECT_WEEKS_AFTER   = 2
+# Min market cap (IDR trillion) to qualify as a large IPO; set 0 to treat all equally
+IPO_MIN_MARKET_CAP_IDR_T = 1.0
+
+# ── Scenario forecasts ────────────────────────────────────────────────────────
+SCENARIOS_INPUT_PATH  = "data/macro/scenarios.csv"
+SCENARIOS_OUTPUT_DIR  = "outputs/csv/scenarios"
+IPO_IMPACT_PATH       = "outputs/csv/ipo_impact_analysis.csv"

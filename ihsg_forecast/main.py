@@ -4,10 +4,13 @@ IHSG Volume & User Acquisition Forecast Pipeline
 Entry point — run from the ihsg_forecast/ directory.
 
 Usage:
-    python main.py                  # full pipeline
-    python main.py --skip-fetch     # skip yfinance download, use existing raw CSV
-    python main.py --backtest-only  # load processed data, re-run backtest only
-    python main.py --forecast-only  # full pipeline except backtest
+    python main.py                         # full pipeline
+    python main.py --skip-fetch            # skip yfinance download, use existing raw CSV
+    python main.py --backtest-only         # load processed data, re-run backtest only
+    python main.py --forecast-only         # full pipeline except backtest
+    python main.py --scenarios FILE        # scenario CSV (default: data/macro/scenarios.csv)
+    python main.py --scenarios ""          # force neutral BASE forecast (ignore file)
+    python main.py --no-ipo                # skip IPO calendar, set all IPO dummies to 0
 """
 
 import os
@@ -22,6 +25,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from config import (
     RAW_DATA_PATH, MACRO_INPUT_PATH, PROCESSED_DATA_PATH,
     FORECAST_PATH, FORECAST_WEEKS,
+    IPO_INPUT_PATH,
 )
 
 BANNER = """
@@ -34,9 +38,12 @@ DIRS_TO_CREATE = [
     "data/raw",
     "data/macro",
     "data/processed",
+    "data/ipo",
     "models",
     "backtest",
+    "scenarios",
     "outputs/csv",
+    "outputs/csv/scenarios",
     "outputs/charts",
     "outputs/reports",
 ]
@@ -65,6 +72,21 @@ def _parse_args():
         "--forecast-only",
         action="store_true",
         help="Run full pipeline (fetch → model → forecast) but skip backtest",
+    )
+    parser.add_argument(
+        "--scenarios",
+        metavar="FILE",
+        default=None,
+        help=(
+            "Path to scenario definitions CSV. "
+            "Default: data/macro/scenarios.csv if present, else neutral BASE. "
+            "Pass empty string '' to force neutral baseline."
+        ),
+    )
+    parser.add_argument(
+        "--no-ipo",
+        action="store_true",
+        help="Skip IPO calendar load; all IPO dummy columns set to 0.",
     )
     return parser.parse_args()
 
@@ -104,10 +126,27 @@ def main():
     from compute_variables import load_macro
     macro_df = load_macro(MACRO_INPUT_PATH)
 
+    # ── STEP 2b: Load IPO calendar ─────────────────────────────────────────
+    if args.no_ipo:
+        print("\n  [IPO] --no-ipo flag set; IPO dummies will be 0.")
+        ipo_df = pd.DataFrame(
+            columns=["announcement_date", "ticker", "company_name", "market_cap_idr_trillion"]
+        )
+    else:
+        try:
+            ipo_df = pd.read_csv(IPO_INPUT_PATH, comment="#", parse_dates=["announcement_date"])
+            print(f"\n  [IPO] Loaded {len(ipo_df)} IPO records from {IPO_INPUT_PATH}")
+        except FileNotFoundError:
+            print(f"\n  WARNING: {IPO_INPUT_PATH} not found. IPO dummies will be 0.")
+            ipo_df = pd.DataFrame(
+                columns=["announcement_date", "ticker", "company_name", "market_cap_idr_trillion"]
+            )
+
     # ── STEP 3: Compute variables ──────────────────────────────────────────
     print("\n[STEP 3/10] Computing weekly input variables ...")
-    from compute_variables import compute_all_variables
+    from compute_variables import compute_all_variables, compute_ipo_dummies
     weekly_df = compute_all_variables(daily_df, macro_df)
+    weekly_df = compute_ipo_dummies(weekly_df, ipo_df)
 
     # ── STEP 4: Fit Model 1 ────────────────────────────────────────────────
     print("\n[STEP 4/10] Fitting Model 1 (SARIMAX) ...")
@@ -116,33 +155,71 @@ def main():
 
     # ── STEP 5: Fit Model 2 ────────────────────────────────────────────────
     print("\n[STEP 5/10] Fitting Model 2 (Negative Binomial) ...")
-    from models.model2_users import fit_model2
-    fitted2, sig_lags, used_synthetic = fit_model2(weekly_df)
+    from models.model2_users import fit_model2, compute_ipo_impact_analysis
+    fitted2_dict, sig_lags, used_synthetic = fit_model2(weekly_df)
 
-    # ── STEP 6: Generate forward forecast ─────────────────────────────────
-    print(f"\n[STEP 6/10] Generating {FORECAST_WEEKS}-week forward forecast ...")
+    # Run IPO impact analysis on the training period
+    if not args.no_ipo and ipo_df is not None and len(ipo_df) > 0:
+        compute_ipo_impact_analysis(fitted2_dict, weekly_df)
+
+    # ── STEP 6: Generate forward forecasts (all scenarios) ─────────────────
+    from scenarios.scenario_engine import get_all_scenarios
+    scenario_exog_map = get_all_scenarios(
+        args.scenarios, macro_df, weekly_df, steps=FORECAST_WEEKS
+    )
+    n_scenarios = len(scenario_exog_map)
+    print(f"\n[STEP 6/10] Generating {FORECAST_WEEKS}-week forward forecast ({n_scenarios} scenario(s)) ...")
+
     from models.model1_volume import forecast_model1
-    vol_forecast = forecast_model1(fitted1, weekly_df, steps=FORECAST_WEEKS)
-
     from models.model2_users import forecast_model2
-    acct_forecast = forecast_model2(fitted2, sig_lags, vol_forecast, weekly_df)
 
-    # ── STEP 7: Save forecast CSV ──────────────────────────────────────────
-    print("\n[STEP 7/10] Saving forward forecast CSV ...")
-    forecast_out = vol_forecast.merge(acct_forecast, on="week_end_date", how="left")
-    forecast_out["forecast_volume_idr_bn"] = forecast_out["forecast_volume"] / 1e9
-    forecast_out[
-        [
-            "week_end_date",
-            "forecast_log_volume",
-            "lower_ci",
-            "upper_ci",
-            "forecast_volume_idr_bn",
-            "forecast_new_accounts",
-        ]
-    ].to_csv(FORECAST_PATH, index=False)
-    print(f"  Forward forecast saved → {FORECAST_PATH}")
-    print(forecast_out[["week_end_date", "forecast_volume_idr_bn", "forecast_new_accounts"]].to_string(index=False))
+    # IPO rows beyond today (future announcements for forecast window)
+    today = pd.Timestamp.today().normalize()
+    if ipo_df is not None and len(ipo_df) > 0:
+        future_ipo_df = ipo_df[
+            pd.to_datetime(ipo_df["announcement_date"], errors="coerce") > today
+        ].copy()
+    else:
+        future_ipo_df = None
+
+    all_vol_forecasts  = {}
+    all_acct_forecasts = {}
+
+    for scenario_name, future_exog in scenario_exog_map.items():
+        print(f"  Forecasting scenario: {scenario_name} ...")
+        vol_fc = forecast_model1(
+            fitted1, weekly_df, steps=FORECAST_WEEKS, future_exog_df=future_exog
+        )
+        acct_fc = forecast_model2(
+            fitted2_dict, sig_lags, vol_fc, weekly_df,
+            future_exog_df=future_exog,
+            future_ipo_df=future_ipo_df,
+        )
+        all_vol_forecasts[scenario_name]  = vol_fc
+        all_acct_forecasts[scenario_name] = acct_fc
+
+    # ── STEP 7: Save forecast CSVs ─────────────────────────────────────────
+    print("\n[STEP 7/10] Saving forward forecast CSV(s) ...")
+    from scenarios.scenario_output import save_scenario_forecasts
+    save_scenario_forecasts(all_vol_forecasts, all_acct_forecasts)
+
+    # Print human-readable summary for BASE (or first) scenario
+    base_name = "BASE" if "BASE" in all_vol_forecasts else list(all_vol_forecasts.keys())[0]
+    vol_base  = all_vol_forecasts[base_name]
+    acct_base = all_acct_forecasts[base_name]
+    summary   = vol_base.merge(
+        acct_base[["week_end_date", "forecast_new_accounts"]], on="week_end_date", how="left"
+    )
+    summary["forecast_volume_idr_bn"] = np.exp(summary["forecast_log_volume"]) * 5 / 1e9
+    print(f"\n  {base_name} scenario summary:")
+    print(summary[["week_end_date", "forecast_volume_idr_bn", "forecast_new_accounts"]].to_string(index=False))
+
+    # ── Generate scenario fan chart ────────────────────────────────────────
+    try:
+        from scenarios.scenario_chart import plot_scenario_fan_chart
+        plot_scenario_fan_chart(weekly_df, all_vol_forecasts, all_acct_forecasts)
+    except Exception as e:
+        print(f"  WARNING: Scenario fan chart failed: {e}")
 
     # ── STEP 8–11: Backtest ────────────────────────────────────────────────
     if not args.forecast_only:

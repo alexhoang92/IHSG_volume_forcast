@@ -1,0 +1,22 @@
+# IPO CALENDAR — TEMPLATE
+#
+# IMPORTANT: announcement_date must be the BOOK-OPEN / PROSPECTUS PUBLICATION DATE.
+# Do NOT use the listing/trading date — that is typically 2-4 weeks later.
+# Using the listing date instead will shift all IPO dummy flags forward by 2-4 weeks
+# and produce incorrect model estimates.
+#
+# Columns:
+#   announcement_date     : YYYY-MM-DD format (book-open date)
+#   ticker                : IDX ticker symbol (e.g. GOTO, BREN)
+#   company_name          : Full legal name (PT ... Tbk)
+#   market_cap_idr_trillion : IPO market cap in IDR trillion (e.g. 5.2).
+#                             Leave blank if unknown. Only rows with a numeric value
+#                             >= IPO_MIN_MARKET_CAP_IDR_T (default 1.0) are flagged
+#                             as ipo_large_flag = 1.
+#   sector                : Consumer / Technology / Finance / Energy / etc.
+#   notes                 : Optional free-text
+#
+announcement_date,ticker,company_name,market_cap_idr_trillion,sector,notes
+2024-01-15,ABCD,PT Contoh Besar Tbk,2.5,Consumer,Example large IPO
+2024-03-04,EFGH,PT Kecil Tbk,,Technology,Small IPO — market cap unknown
+2024-06-10,IJKL,PT Menengah Tbk,0.8,Finance,Below large-IPO threshold

@@ -1,0 +1,47 @@
+# SCENARIO DEFINITIONS FOR FORWARD FORECAST
+#
+# Rules:
+#   - Each row defines one forecast week for one scenario.
+#   - 'scenario' : short name, no spaces (e.g. BASE, BULL, BEAR, CRISIS).
+#   - 'week_end_date' : leave blank to auto-generate consecutive Fridays from today.
+#   - 'shock_score' : analyst macro sentiment.
+#       +2.0 = Major positive (BI rate cut, large FDI, IMF upgrade)
+#       +1.5 = Moderate positive
+#       +1.0 = Mild positive
+#       +0.5 = Slight positive
+#        0.0 = Neutral / no event
+#       -0.5 = Slight negative
+#       -1.0 = Mild negative (tariff threat, FII outflow)
+#       -1.5 = Moderate negative (political uncertainty, BI surprise hold)
+#       -2.0 = Major negative (sudden rate hike, crisis, escalation)
+#   - 'event_type' : geopolitical | monetary_policy | trade | corporate | (leave blank)
+#   - 'policy_rate' : BI benchmark rate in % (e.g. 5.75). Leave blank to carry
+#                     forward the last observed rate from macro_shocks.csv.
+#   - You do NOT need to fill all 8 weeks — missing rows are padded with the last
+#     row of the scenario. Extra rows beyond FORECAST_WEEKS are truncated.
+#
+scenario,week_end_date,shock_score,event_type,policy_rate
+BASE,,0,,
+BASE,,0,,
+BASE,,0,,
+BASE,,0,,
+BASE,,0,,
+BASE,,0,,
+BASE,,0,,
+BASE,,0,,
+BULL,,0.5,,
+BULL,,0.5,,
+BULL,,1.0,monetary_policy,5.75
+BULL,,1.0,,5.75
+BULL,,0.5,,5.75
+BULL,,0.5,,5.75
+BULL,,0.5,,5.75
+BULL,,0.5,,5.75
+BEAR,,-0.5,,
+BEAR,,-0.5,,
+BEAR,,-1.0,trade,6.25
+BEAR,,-1.0,,6.25
+BEAR,,-0.5,,6.25
+BEAR,,-0.5,,6.25
+BEAR,,-0.5,,6.25
+BEAR,,-0.5,,6.25

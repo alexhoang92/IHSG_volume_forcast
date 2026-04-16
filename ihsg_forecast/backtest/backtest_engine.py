@@ -135,8 +135,8 @@ def run_backtest(weekly_df: pd.DataFrame) -> pd.DataFrame:
         )
 
         # Fit & forecast Model 2
-        fitted2, sig_lags, _ = fit_model2(train_df)
-        acct_forecast = forecast_model2(fitted2, sig_lags, forecast_df, train_df)
+        fitted2_dict, sig_lags, _ = fit_model2(train_df)
+        acct_forecast = forecast_model2(fitted2_dict, sig_lags, forecast_df, train_df)
 
         # Align actuals with forecast
         # Use trading-day-adjusted log volume (model target) for metric computation
@@ -165,6 +165,24 @@ def run_backtest(weekly_df: pd.DataFrame) -> pd.DataFrame:
         )
         acct_mae = compute_accounts_mae(pd.Series(actual_accts[:n]), pd.Series(forecast_accts[:n]))
         metrics["acct_mae"] = acct_mae
+
+        # IPO-week vs non-IPO-week MAE for new accounts
+        ipo_flag = test_df.get("ipo_announcement_week", pd.Series(0, index=test_df.index)).values[:n]
+        ipo_mask     = ipo_flag == 1
+        non_ipo_mask = ipo_flag == 0
+        if ipo_mask.sum() > 0:
+            metrics["acct_mae_ipo"] = float(np.mean(np.abs(
+                actual_accts[:n][ipo_mask] - forecast_accts[:n][ipo_mask]
+            )))
+        else:
+            metrics["acct_mae_ipo"] = None
+        if non_ipo_mask.sum() > 0:
+            metrics["acct_mae_non_ipo"] = float(np.mean(np.abs(
+                actual_accts[:n][non_ipo_mask] - forecast_accts[:n][non_ipo_mask]
+            )))
+        else:
+            metrics["acct_mae_non_ipo"] = None
+
         cycle_metrics.append(metrics)
 
         # Build result rows
@@ -181,6 +199,7 @@ def run_backtest(weekly_df: pd.DataFrame) -> pd.DataFrame:
                 "forecast_volume":      forecast_vol[:n],
                 "actual_new_accounts":  actual_accts[:n],
                 "forecast_new_accounts": forecast_accts[:n],
+                "ipo_announcement_week": ipo_flag,
                 "error_log_vol":        actual_lv[:n] - forecast_lv[:n],
                 "error_vol_pct":        (actual_vol[:n] - forecast_vol[:n]) / actual_vol[:n] * 100,
                 "in_ci":                ((actual_lv[:n] >= lower[:n]) & (actual_lv[:n] <= upper[:n])).astype(int),
@@ -210,18 +229,31 @@ def _save_backtest_summary(cycle_metrics: list):
     def _fmt(metrics, key, fmt):
         return fmt.format(metrics[key]) if metrics else "N/A"
 
+    def _fmt_nullable(metrics, key, fmt):
+        if metrics is None:
+            return "N/A"
+        val = metrics.get(key)
+        if val is None:
+            return "n/a"
+        return fmt.format(val)
+
     for i, row_def in enumerate([
-        ("MAE (log vol)",       "mae",          "{:.3f}"),
-        ("RMSE (log vol)",      "rmse",         "{:.3f}"),
-        ("MAPE (volume %)",     "mape",         "{:.1f}%"),
-        ("Direction accuracy",  "direction_acc", "{:.0f}%"),
-        ("95% CI coverage",     "coverage",     "{:.0f}%"),
-        ("MAE (new accounts)",  "acct_mae",     "{:.0f}"),
+        ("MAE (log vol)",           "mae",              "{:.3f}"),
+        ("RMSE (log vol)",          "rmse",             "{:.3f}"),
+        ("MAPE (volume %)",         "mape",             "{:.1f}%"),
+        ("Direction accuracy",      "direction_acc",    "{:.0f}%"),
+        ("95% CI coverage",         "coverage",         "{:.0f}%"),
+        ("MAE (new accounts)",      "acct_mae",         "{:.0f}"),
+        ("MAE — IPO weeks",         "acct_mae_ipo",     "{:.0f}"),
+        ("MAE — non-IPO weeks",     "acct_mae_non_ipo", "{:.0f}"),
     ]):
         label, key, fmt = row_def
         row = [label]
         for cm in cycle_metrics:
-            row.append(_fmt(cm, key, fmt))
+            if key in ("acct_mae_ipo", "acct_mae_non_ipo"):
+                row.append(_fmt_nullable(cm, key, fmt))
+            else:
+                row.append(_fmt(cm, key, fmt))
         # Pad to 3 cycles
         while len(row) < 4:
             row.append("N/A")
@@ -351,3 +383,49 @@ def _plot_backtest_results(results_df: pd.DataFrame, weekly_df: pd.DataFrame):
         print(f"  Chart saved → {path}")
     except Exception as e:
         print(f"  WARNING: Chart 4 failed: {e}")
+
+    # ── Chart 5 — IPO effect analysis ──────────────────────────────────────
+    try:
+        from config import IPO_IMPACT_PATH
+        if os.path.exists(IPO_IMPACT_PATH):
+            impact_df = pd.read_csv(IPO_IMPACT_PATH)
+            if len(impact_df) > 0:
+                fig, (ax_a, ax_b) = plt.subplots(2, 1, figsize=(14, 10))
+
+                # Panel A: actual vs fitted with IPO events marked
+                has_actuals = "new_accounts" in weekly_df.columns and not weekly_df["new_accounts"].isna().all()
+                if has_actuals:
+                    ax_a.bar(weekly_df["week_end_date"], weekly_df["new_accounts"].fillna(0),
+                             color="#AAAAAA", alpha=0.6, width=4, label="Actual new accounts")
+
+                # Mark IPO announcement weeks with vertical lines
+                for _, row in impact_df.iterrows():
+                    wdt = pd.Timestamp(row["week_end_date"])
+                    ax_a.axvline(wdt, color="#FF8C00", linewidth=1.5, alpha=0.7)
+                    ticker = str(row.get("ipo_ticker", ""))
+                    if ticker and ticker != "nan":
+                        ax_a.text(wdt, ax_a.get_ylim()[1] * 0.9 if ax_a.get_ylim()[1] > 0 else 1,
+                                  ticker, rotation=45, fontsize=7, color="#FF8C00")
+                    if int(row.get("ipo_large_flag", 0)) == 1:
+                        ax_a.plot(wdt, 0, marker="*", color="red", markersize=10, zorder=5)
+
+                ax_a.set_title("New account registrations — actual with IPO events")
+                ax_a.set_ylabel("New Accounts")
+                ax_a.legend(fontsize=8)
+
+                # Panel B: horizontal bar of uplift %
+                colors_b = ["#c06a1b" if int(r.get("ipo_large_flag", 0)) == 0 else "#a01515"
+                            for _, r in impact_df.iterrows()]
+                labels_b = [str(r.get("week_end_date", i))[:10] for i, r in impact_df.iterrows()]
+                ax_b.barh(labels_b, impact_df["ipo_uplift_pct"].fillna(0), color=colors_b)
+                ax_b.set_xlabel("% uplift vs baseline")
+                ax_b.set_title("Estimated new-user uplift per IPO announcement")
+                ax_b.axvline(0, color="black", linewidth=0.8)
+
+                fig.tight_layout()
+                path = os.path.join(CHARTS_DIR, "ipo_effect_analysis.png")
+                fig.savefig(path, dpi=150)
+                plt.close(fig)
+                print(f"  Chart saved → {path}")
+    except Exception as e:
+        print(f"  WARNING: IPO effect chart failed: {e}")
