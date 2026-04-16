@@ -125,6 +125,16 @@ def fit_model2(weekly_df: pd.DataFrame):
         significant_lags = [dominant_lag]
         print(f"  No lags above 0.2 threshold; using dominant lag {dominant_lag}.")
 
+    # ── Mean-center log-volume features for numerical stability ────────────
+    # lag_lv_* and log_volume_adj are all ~31 (log of IDR volume).
+    # Collinearity at that scale makes the design matrix near-singular.
+    # Subtracting the mean converts levels to deviations with the same information.
+    lv_center = float(df["log_volume_adj"].dropna().mean())
+    lv_level_cols = [c for c in df.columns if c.startswith("lag_lv_")] + ["log_volume_adj"]
+    for c in lv_level_cols:
+        if c in df.columns:
+            df[c] = df[c] - lv_center
+
     # ── Fit Negative Binomial ───────────────────────────────────────────────
     X, y, _ = build_model2_exog(df, significant_lags)
 
@@ -165,6 +175,7 @@ def fit_model2(weekly_df: pd.DataFrame):
         "result":         result,
         "selected_lags":  significant_lags,
         "used_synthetic": used_synthetic,
+        "lv_center":      lv_center,
     }
     return fitted_dict, significant_lags, used_synthetic
 
@@ -197,15 +208,20 @@ def forecast_model2(
     from compute_variables import compute_ipo_dummies
 
     result = fitted_model2_dict["result"] if isinstance(fitted_model2_dict, dict) else fitted_model2_dict
+    lv_center = fitted_model2_dict.get("lv_center", 0.0) if isinstance(fitted_model2_dict, dict) else 0.0
     steps = len(volume_forecast_df)
 
     last_row = weekly_df[BASE_EXOG_COLS + LAG_COLS].dropna().iloc[-1].copy()
+    # Apply same mean-centering as was applied during fit
+    for c in [col for col in last_row.index if col.startswith("lag_lv_")] + ["log_volume_adj"]:
+        if c in last_row.index:
+            last_row[c] -= lv_center
 
     # Build forecast scaffold DataFrame (one row per forecast step)
     rows = []
     for i, (_, frow) in enumerate(volume_forecast_df.iterrows()):
         row = last_row.copy()
-        row["log_volume_adj"]      = frow["forecast_log_volume"]
+        row["log_volume_adj"]      = frow["forecast_log_volume"] - lv_center
         row["log_trading_days"]    = np.log(5)
         row["volume_momentum"]     = 0.0
         row["weekly_return"]       = last_row["weekly_return"]
@@ -293,11 +309,17 @@ def compute_ipo_impact_analysis(fitted_model2_dict, weekly_df: pd.DataFrame) -> 
 
     result_model = fitted_model2_dict["result"]
     significant_lags = fitted_model2_dict["selected_lags"]
+    lv_center = fitted_model2_dict.get("lv_center", 0.0)
 
     df = weekly_df.copy()
     if "new_accounts" not in df.columns or df["new_accounts"].isna().all():
         from models.model2_users import _generate_synthetic_new_accounts
         df["new_accounts"] = _generate_synthetic_new_accounts(df)
+
+    # Apply same mean-centering as used in fit
+    for c in [col for col in df.columns if col.startswith("lag_lv_")] + ["log_volume_adj"]:
+        if c in df.columns:
+            df[c] = df[c] - lv_center
 
     # Only analyse IPO announcement weeks
     ipo_mask = df.get("ipo_announcement_week", pd.Series(0, index=df.index)) == 1

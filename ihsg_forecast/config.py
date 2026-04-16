@@ -29,6 +29,7 @@ REPORT_PATH           = "outputs/reports/backtest_summary.txt"
 CHARTS_DIR            = "outputs/charts"
 
 # ── IPO calendar ──────────────────────────────────────────────────────────────
+VOLUME_INPUT_PATH        = "data/raw/ihsg_volume.csv"    # external IDR volume source
 IPO_INPUT_PATH           = "data/ipo/ipo_calendar.csv"
 IPO_TEMPLATE_PATH        = "data/ipo/ipo_calendar_TEMPLATE.csv"
 # Weeks after announcement date to flag as follow-on subscription/allotment effect
