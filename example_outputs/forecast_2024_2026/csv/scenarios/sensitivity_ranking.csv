@@ -1,0 +1,15 @@
+variable,coefficient,historical_std,1std_log_impact,1std_vol_pct
+macro_shock_abs,0.095742,0.732345,0.070116,7.26
+interest_rate_direction,-0.492441,0.116387,-0.057314,-5.57
+d_geo,0.416854,0.131866,0.054969,5.65
+macro_pos_lag1,0.132389,0.375566,0.049721,5.1
+macro_pos_lag3,0.106799,0.375566,0.04011,4.09
+macro_neg_lag2,-0.04325,0.650081,-0.028116,-2.77
+log_trading_days,0.136094,0.201718,0.027453,2.78
+macro_pos_lag2,-0.052204,0.375566,-0.019606,-1.94
+realized_volatility,0.94661,0.015021,0.014219,1.43
+weekly_return,0.540056,0.0261,0.014095,1.42
+macro_neg_lag3,0.011241,0.650081,0.007307,0.73
+macro_neg_lag1,0.001923,0.650081,0.00125,0.13
+d_mp,0.0,0.0,0.0,0.0
+d_trade,0.0,0.0,0.0,0.0

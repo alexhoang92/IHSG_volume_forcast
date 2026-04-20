@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from config import (
     RAW_DATA_PATH, MACRO_INPUT_PATH, PROCESSED_DATA_PATH,
     FORECAST_PATH, FORECAST_WEEKS,
-    IPO_INPUT_PATH,
+    IPO_INPUT_PATH, TRAINING_START,
 )
 
 BANNER = """
@@ -142,6 +142,13 @@ def main():
                 columns=["announcement_date", "ticker", "company_name", "market_cap_idr_trillion"]
             )
 
+    # ── Apply training start cutoff ───────────────────────────────────────
+    if TRAINING_START:
+        cutoff = pd.Timestamp(TRAINING_START)
+        before = len(daily_df)
+        daily_df = daily_df[daily_df["date"] >= cutoff].copy()
+        print(f"\n  [TRAINING_START={TRAINING_START}] Filtered {before} → {len(daily_df)} daily rows (dropped pre-{TRAINING_START} data)")
+
     # ── STEP 3: Compute variables ──────────────────────────────────────────
     print("\n[STEP 3/10] Computing weekly input variables ...")
     from compute_variables import compute_all_variables, compute_ipo_dummies
@@ -222,11 +229,28 @@ def main():
         all_vol_forecasts[scenario_name]  = vol_fc
         all_acct_forecasts[scenario_name] = acct_fc
 
+    # ── Contribution & sensitivity analysis for Model 1 ───────────────────
+    from models.model1_volume import compute_contribution_analysis, compute_sensitivity_analysis
+    contribution_by_scenario = {}
+    for scenario_name, future_exog in scenario_exog_map.items():
+        if future_exog is not None:
+            vol_fc = all_vol_forecasts[scenario_name]
+            contrib_df = compute_contribution_analysis(fitted1, future_exog, vol_fc)
+            contribution_by_scenario[scenario_name] = contrib_df
+    sensitivity_df = compute_sensitivity_analysis(fitted1, weekly_df)
+    _model_notes["contribution_by_scenario"] = contribution_by_scenario
+    _model_notes["sensitivity_df"] = sensitivity_df
+
     # ── STEP 7: Save forecast CSVs ─────────────────────────────────────────
     print("\n[STEP 7/10] Saving forward forecast CSV(s) ...")
-    from scenarios.scenario_output import save_scenario_forecasts, save_forecast_summary_table
+    from scenarios.scenario_output import (
+        save_scenario_forecasts, save_forecast_summary_table, save_contribution_analysis,
+    )
     save_scenario_forecasts(all_vol_forecasts, all_acct_forecasts)
     save_forecast_summary_table(all_vol_forecasts, all_acct_forecasts, _model_notes)
+    save_contribution_analysis(contribution_by_scenario, sensitivity_df)
+    from scenarios.scenario_explanation import save_sensitivity_explanation
+    save_sensitivity_explanation(sensitivity_df, contribution_by_scenario, _model_notes)
 
     # Print human-readable summary for BASE (or first) scenario
     base_name = "BASE" if "BASE" in all_vol_forecasts else list(all_vol_forecasts.keys())[0]

@@ -1,0 +1,55 @@
+week_end_date,BASE_vol_idr_bn,BASE_vol_lower_95,BASE_vol_upper_95,BASE_new_accounts,BULL_vol_idr_bn,BULL_new_accounts,BEAR_vol_idr_bn,BEAR_new_accounts
+2026-04-24,209257.63,46691.69,937827.64,98087,209257.63,98087,209257.63,98087
+2026-05-01,215276.47,48034.67,964802.22,99554,215276.47,99554,215276.47,99554
+2026-05-08,202946.54,45283.49,909543.3,96526,213441.79,99109,202946.54,96526
+2026-05-15,237033.8,52889.39,1062311.81,104702,324072.28,123334,319861.31,122493
+2026-05-22,248758.15,55505.45,1114856.69,107383,396156.2,137013,234549.41,104126
+2026-05-29,192442.76,42939.78,862468.62,93877,209017.5,98028,165800.33,86830
+2026-06-05,206373.85,46048.23,924903.41,97376,220031.44,100699,175623.37,89487
+2026-06-12,197310.08,44025.83,884282.42,95113,202300.35,96365,194396.4,94375
+
+# ────────────────────────────────────────────────────────────
+# MODEL & DATA NOTES
+# ────────────────────────────────────────────────────────────
+# Model 1 (Volume): SARIMAX(1,1,1)(1,0,1,52)  AIC=5533.4  BIC=5584.9
+# Model 2 (New Accounts): Negative Binomial  Pseudo R²=0.0756
+# Confidence intervals (BASE_vol_lower_95 / BASE_vol_upper_95) are clipped to forecast ±exp(1.5) due to SARIMAX prediction-interval numerical instability over an 8-week horizon. Treat as indicative range only.
+# IPO WARNING: Negative IPO coefficients detected in Model 2. This suggests announcement_date values in ipo_calendar.csv may be IDX listing dates rather than book-open/subscription-start dates. Shift dates ~3–4 weeks earlier to the actual investor registration window for correct IPO uplift estimation.
+# Data note: 1 week(s) in macro_shocks.csv had blank new_accounts and were excluded from Model 2 fitting.
+# Backtest MAPE (volume) — Cycle 1: 17.3%  |  Cycle 2: 29.5%  |  Cycle 3: 33.3%
+# ────────────────────────────────────────────────────────────
+# SENSITIVITY RANKING — impact of 1 std dev change on weekly volume
+#   (log-volume units; vol_pct = approx % change in weekly IDR volume)
+#   1. macro_shock_abs           coef=+0.0999  1σ=0.6609  → +0.0660 log-units (+6.8% vol)
+#   2. macro_pos_lag1            coef=+0.1152  1σ=0.4000  → +0.0461 log-units (+4.7% vol)
+#   3. d_geo                     coef=+0.3079  1σ=0.1094  → +0.0337 log-units (+3.4% vol)
+#   4. macro_neg_lag2            coef=-0.0370  1σ=0.5464  → -0.0202 log-units (-2.0% vol)
+#   5. interest_rate_direction   coef=+0.1368  1σ=0.1115  → +0.0153 log-units (+1.5% vol)
+# ────────────────────────────────────────────────────────────
+# VARIABLE CONTRIBUTION SUMMARY (avg over 8-week forecast, log-volume units)
+#   Positive = volume-boosting; Negative = volume-suppressing
+#   BASE:
+#     Boosters:    macro_shock_abs=+0.0312  macro_pos_lag1=+0.0288  realized_volatility=+0.0233
+#     Suppressors: log_trading_days=-0.0602  macro_pos_lag2=-0.0027  macro_neg_lag2=-0.0023
+#     ARMA component (avg): +31.3548
+#   BEAR:
+#     Boosters:    macro_shock_abs=+0.0812  realized_volatility=+0.0233  macro_neg_lag1=+0.0116
+#     Suppressors: log_trading_days=-0.0602  macro_neg_lag2=-0.0301  macro_neg_lag3=-0.0121
+#     ARMA component (avg): +31.3548
+#   BULL:
+#     Boosters:    macro_pos_lag1=+0.0936  macro_shock_abs=+0.0812  realized_volatility=+0.0233
+#     Suppressors: log_trading_days=-0.0602  macro_pos_lag2=-0.0088
+#     ARMA component (avg): +31.3548
+#   BEAR vs BASE — key differentiators (avg delta):
+#     macro_shock_abs           +0.0499 log-units (+5.1% vol)
+#     macro_pos_lag1            -0.0288 log-units (-2.8% vol)
+#     macro_neg_lag2            -0.0278 log-units (-2.7% vol)
+#     macro_neg_lag3            -0.0112 log-units (-1.1% vol)
+#     macro_neg_lag1            +0.0107 log-units (+1.1% vol)
+#   BULL vs BASE — key differentiators (avg delta):
+#     macro_pos_lag1            +0.0648 log-units (+6.7% vol)
+#     macro_shock_abs           +0.0499 log-units (+5.1% vol)
+#     macro_pos_lag3            +0.0140 log-units (+1.4% vol)
+#     macro_pos_lag2            -0.0061 log-units (-0.6% vol)
+#     macro_neg_lag2            +0.0023 log-units (+0.2% vol)
+# ────────────────────────────────────────────────────────────

@@ -185,6 +185,40 @@ def save_forecast_summary_table(
     print(f"  Forecast summary table saved → {summary_path} ({len(table)} forecast weeks)")
 
 
+def save_contribution_analysis(
+    contribution_by_scenario: dict,
+    sensitivity_df,
+) -> None:
+    """
+    Saves:
+      - outputs/csv/scenarios/forecast_contribution_analysis.csv
+          All scenarios stacked; one row per forecast week with per-variable
+          contributions (in log-volume units) and ARMA residual component.
+      - outputs/csv/scenarios/sensitivity_ranking.csv
+          One row per exog variable: coefficient, historical std, and
+          approximate % volume impact of a 1-std-dev change.
+    """
+    os.makedirs(SCENARIOS_OUTPUT_DIR, exist_ok=True)
+
+    # ── Contribution analysis (stacked across scenarios) ──────────────────
+    if contribution_by_scenario:
+        stacked = []
+        for scenario_name, contrib_df in contribution_by_scenario.items():
+            row = contrib_df.copy()
+            row.insert(0, "scenario", scenario_name)
+            stacked.append(row)
+        contrib_all = pd.concat(stacked, ignore_index=True)
+        contrib_path = os.path.join(SCENARIOS_OUTPUT_DIR, "forecast_contribution_analysis.csv")
+        contrib_all.to_csv(contrib_path, index=False)
+        print(f"  Contribution analysis saved → {contrib_path} ({len(contrib_all)} rows)")
+
+    # ── Sensitivity ranking ───────────────────────────────────────────────
+    if sensitivity_df is not None and len(sensitivity_df) > 0:
+        sens_path = os.path.join(SCENARIOS_OUTPUT_DIR, "sensitivity_ranking.csv")
+        sensitivity_df.to_csv(sens_path, index=False)
+        print(f"  Sensitivity ranking saved → {sens_path} ({len(sensitivity_df)} variables)")
+
+
 def _build_notes(mn: dict) -> list:
     """Build a list of plain note strings from the model_notes dict."""
     lines = []
@@ -245,6 +279,78 @@ def _build_notes(mn: dict) -> list:
         for i, m in enumerate(mapes, 1):
             parts.append(f"Cycle {i}: {m:.1f}%" if m is not None else f"Cycle {i}: N/A")
         lines.append("Backtest MAPE (volume) — " + "  |  ".join(parts))
+
+    # ── Sensitivity ranking (top 5 variables by 1-std impact) ─────────────
+    sensitivity_df = mn.get("sensitivity_df")
+    if sensitivity_df is not None and len(sensitivity_df) > 0:
+        lines.append("─" * 60)
+        lines.append("SENSITIVITY RANKING — impact of 1 std dev change on weekly volume")
+        lines.append("  (log-volume units; vol_pct = approx % change in weekly IDR volume)")
+        top5 = sensitivity_df.head(5)
+        for rank, (_, r) in enumerate(top5.iterrows(), 1):
+            sign = "+" if r["1std_log_impact"] >= 0 else ""
+            lines.append(
+                f"  {rank}. {r['variable']:<25} "
+                f"coef={r['coefficient']:+.4f}  "
+                f"1σ={r['historical_std']:.4f}  "
+                f"→ {sign}{r['1std_log_impact']:.4f} log-units "
+                f"({sign}{r['1std_vol_pct']:.1f}% vol)"
+            )
+
+    # ── Per-scenario contribution summary ─────────────────────────────────
+    contrib_map = mn.get("contribution_by_scenario")
+    if contrib_map:
+        contrib_cols = [c for c in next(iter(contrib_map.values())).columns
+                        if c.startswith("contrib_") and c not in ("contrib_intercept", "contrib_arma")]
+
+        lines.append("─" * 60)
+        lines.append("VARIABLE CONTRIBUTION SUMMARY (avg over 8-week forecast, log-volume units)")
+        lines.append("  Positive = volume-boosting; Negative = volume-suppressing")
+
+        base_avgs = None
+        for scenario_name, contrib_df in contrib_map.items():
+            avgs = {c: contrib_df[c].mean() for c in contrib_cols if c in contrib_df.columns}
+            arma_avg = contrib_df["contrib_arma"].mean() if "contrib_arma" in contrib_df.columns else 0.0
+            lines.append(f"  {scenario_name}:")
+
+            # Top 3 positive and top 3 negative drivers
+            sorted_avgs = sorted(avgs.items(), key=lambda x: x[1], reverse=True)
+            top_pos = [(k, v) for k, v in sorted_avgs if v > 0.0001][:3]
+            top_neg = [(k, v) for k, v in reversed(sorted_avgs) if v < -0.0001][:3]
+
+            if top_pos:
+                pos_str = "  ".join(
+                    f"{k.replace('contrib_', '')}={v:+.4f}" for k, v in top_pos
+                )
+                lines.append(f"    Boosters:    {pos_str}")
+            if top_neg:
+                neg_str = "  ".join(
+                    f"{k.replace('contrib_', '')}={v:+.4f}" for k, v in top_neg
+                )
+                lines.append(f"    Suppressors: {neg_str}")
+            lines.append(f"    ARMA component (avg): {arma_avg:+.4f}")
+
+            if scenario_name == "BASE":
+                base_avgs = avgs
+
+        # ── Scenario differentiators vs BASE ──────────────────────────────
+        if base_avgs is not None:
+            for scenario_name, contrib_df in contrib_map.items():
+                if scenario_name == "BASE":
+                    continue
+                avgs = {c: contrib_df[c].mean() for c in contrib_cols if c in contrib_df.columns}
+                deltas = {k: avgs.get(k, 0) - base_avgs.get(k, 0) for k in contrib_cols}
+                sorted_deltas = sorted(deltas.items(), key=lambda x: abs(x[1]), reverse=True)
+                meaningful = [(k, v) for k, v in sorted_deltas if abs(v) > 0.0001][:5]
+                if meaningful:
+                    lines.append(f"  {scenario_name} vs BASE — key differentiators (avg delta):")
+                    for k, v in meaningful:
+                        sign = "+" if v >= 0 else ""
+                        vol_pct = (np.exp(v) - 1) * 100
+                        lines.append(
+                            f"    {k.replace('contrib_', ''):<25} {sign}{v:.4f} log-units "
+                            f"({sign}{vol_pct:.1f}% vol)"
+                        )
 
     lines.append("─" * 60)
     return lines

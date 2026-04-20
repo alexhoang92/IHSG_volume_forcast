@@ -1,0 +1,191 @@
+IHSG Forecast — Variable Sensitivity & Impact Explanation
+Generated : 2026-04-20
+Model     : SARIMAX(1, 1, 1)(1, 0, 1, 52)  AIC=5533.4  BIC=5584.9
+Horizon   : 8 weeks forward
+────────────────────────────────────────────────────────────
+HOW TO READ THIS FILE
+
+  The SARIMAX model forecasts log(avg daily trading volume). A positive
+  coefficient means the variable boosts predicted log-volume — i.e. higher
+  weekly IDR trading value. A negative coefficient suppresses it.
+
+  Sensitivity metric:
+    1-std log impact = coefficient × historical std of the variable
+    % volume impact  = (exp(1-std log impact) − 1) × 100
+
+  Example: an impact of +0.05 log-units ≈ +5.1% more weekly trading volume.
+
+  Contribution (Section 3): average contribution of each variable over the
+  8-week forecast window, in log-volume units. Positive = volume-boosting.
+────────────────────────────────────────────────────────────
+SECTION 1: VARIABLE IMPACT DICTIONARY
+  (ordered by sensitivity rank — most impactful first)
+
+  [ 1] macro_shock_abs
+       Label      : Absolute macro shock magnitude on announcement week (|shock_score|)
+       Direction  : Positive coefficient: any large event — positive OR negative — spikes volume on impact week
+       Coefficient: +0.0999  |  Hist std: 0.6609
+       1-std impact: +0.0660 log-units  (+6.83% weekly volume)
+       In practice : 1 std ≈ difference between a routine week and a BI rate-decision or MSCI review week
+
+  [ 2] macro_pos_lag1
+       Label      : Positive shock residual — 1 week after positive event (fund rebalancing wave)
+       Direction  : Positive coefficient: institutional rebalancing into IHSG one week after positive news
+       Coefficient: +0.1152  |  Hist std: 0.4000
+       1-std impact: +0.0461 log-units  (+4.71% weekly volume)
+       In practice : 1 std ≈ rebalancing week following a surprise BI rate cut or MSCI inclusion signal
+
+  [ 3] d_geo
+       Label      : Geopolitical event week dummy (1 = geopolitical shock week, 0 = otherwise)
+       Direction  : Positive coefficient: geopolitical shocks tend to spike short-term trading activity
+       Coefficient: +0.3079  |  Hist std: 0.1094
+       1-std impact: +0.0337 log-units  (+3.43% weekly volume)
+       In practice : 1 std ≈ proportion of event weeks in the sample; binary so std < 1
+
+  [ 4] macro_neg_lag2
+       Label      : Negative shock residual — 2 weeks after adverse event (fear/uncertainty phase)
+       Direction  : Negative coefficient: two-week window of retail investor caution post-shock
+       Coefficient: -0.0370  |  Hist std: 0.5464
+       1-std impact: -0.0202 log-units  (-2.00% weekly volume)
+       In practice : 1 std ≈ lingering suppression two weeks after an MSCI downgrade warning
+
+  [ 5] interest_rate_direction
+       Label      : BI policy rate direction (4-week net change in basis points)
+       Direction  : Positive coefficient: rate cuts ease liquidity → volume uplift; rate hikes suppress volume
+       Coefficient: +0.1368  |  Hist std: 0.1115
+       1-std impact: +0.0153 log-units  (+1.54% weekly volume)
+       In practice : 1 std ≈ a 25 bps BI policy step sustained over 4 weeks
+
+  [ 6] realized_volatility
+       Label      : Intraweek realized volatility (scaled by √trading days)
+       Direction  : Positive coefficient: higher volatility → forced rebalancing/hedging → more turnover
+       Coefficient: +0.8937  |  Hist std: 0.0135
+       1-std impact: +0.0121 log-units  (+1.21% weekly volume)
+       In practice : 1 std ≈ move from a calm week to an active week with ~2× daily price range
+
+  [ 7] macro_pos_lag3
+       Label      : Positive shock residual — 3 weeks after positive event (MSCI effective-date wave)
+       Direction  : Positive coefficient: index-tracking funds completing allocation three weeks out
+       Coefficient: +0.0250  |  Hist std: 0.4000
+       1-std impact: +0.0100 log-units  (+1.00% weekly volume)
+       In practice : 1 std ≈ MSCI effective-date settlement week after a positive review
+
+  [ 8] macro_neg_lag3
+       Label      : Negative shock residual — 3 weeks after adverse event (structural break tail)
+       Direction  : Negative coefficient: persistent volume depression after major structural shocks
+       Coefficient: -0.0149  |  Hist std: 0.5464
+       1-std impact: -0.0081 log-units  (-0.81% weekly volume)
+       In practice : 1 std ≈ tail effect three weeks after a severe shock (e.g., full MSCI exclusion)
+
+  [ 9] log_trading_days
+       Label      : Log of number of trading days in the week (calendar swing adjustment)
+       Direction  : Positive coefficient: more trading days → higher measured weekly volume (mechanical effect)
+       Coefficient: -0.0374  |  Hist std: 0.2096
+       1-std impact: -0.0078 log-units  (-0.78% weekly volume)
+       In practice : 1 std ≈ difference between a 4-day week (1 public holiday) and a full 5-day week
+
+  [10] macro_neg_lag1
+       Label      : Negative shock residual — 1 week after adverse event (panic-selling tail)
+       Direction  : Negative coefficient: fear/uncertainty from last week's adverse news suppresses volume
+       Coefficient: +0.0143  |  Hist std: 0.5464
+       1-std impact: +0.0078 log-units  (+0.79% weekly volume)
+       In practice : 1 std ≈ one week after a mid-sized adverse macro event (e.g., surprise rate hike)
+
+  [11] macro_pos_lag2
+       Label      : Positive shock residual — 2 weeks after positive event (sustained buying)
+       Direction  : Positive coefficient: sustained net inflows two weeks after a positive macro catalyst
+       Coefficient: -0.0109  |  Hist std: 0.4000
+       1-std impact: -0.0043 log-units  (-0.43% weekly volume)
+       In practice : 1 std ≈ ongoing buying pressure two weeks after an FTSE EM inclusion announcement
+
+  [12] weekly_return
+       Label      : IHSG weekly log return
+       Direction  : Positive coefficient: rising market → higher participation → more volume
+       Coefficient: +0.1536  |  Hist std: 0.0222
+       1-std impact: +0.0034 log-units  (+0.34% weekly volume)
+       In practice : 1 std ≈ a ±3–5% weekly index move (typical IHSG weekly swing range)
+
+  [13] d_mp
+       Label      : Monetary policy event week dummy (1 = BI/FOMC decision week, 0 = otherwise)
+       Direction  : Positive coefficient: policy announcement weeks generate elevated positioning activity
+       Coefficient: +0.0000  |  Hist std: 0.0000
+       1-std impact: +0.0000 log-units  (+0.00% weekly volume)
+       In practice : 1 std ≈ a BI Board of Governors meeting week vs. a non-event week
+
+  [14] d_trade
+       Label      : Trade policy event week dummy (1 = major trade policy announcement, 0 = otherwise)
+       Direction  : Mixed coefficient: tariff/trade announcements generate uncertainty-driven volume spikes
+       Coefficient: +0.0000  |  Hist std: 0.0000
+       1-std impact: +0.0000 log-units  (+0.00% weekly volume)
+       In practice : 1 std ≈ a week with a US tariff announcement or WTO ruling affecting Indonesia
+
+────────────────────────────────────────────────────────────
+SECTION 2: SENSITIVITY RANKING
+  Variables sorted by absolute 1-std log impact (most sensitive first)
+
+  Rank  Variable                       Coef   Hist Std   1σ Impact     % Vol
+  ──────────────────────────────────────────────────────────────────────────
+  1     macro_shock_abs             +0.0999     0.6609     +0.0660     +6.83%
+  2     macro_pos_lag1              +0.1152     0.4000     +0.0461     +4.71%
+  3     d_geo                       +0.3079     0.1094     +0.0337     +3.43%
+  4     macro_neg_lag2              -0.0370     0.5464     -0.0202     -2.00%
+  5     interest_rate_direction     +0.1368     0.1115     +0.0153     +1.54%
+  6     realized_volatility         +0.8937     0.0135     +0.0121     +1.21%
+  7     macro_pos_lag3              +0.0250     0.4000     +0.0100     +1.00%
+  8     macro_neg_lag3              -0.0149     0.5464     -0.0081     -0.81%
+  9     log_trading_days            -0.0374     0.2096     -0.0078     -0.78%
+  10    macro_neg_lag1              +0.0143     0.5464     +0.0078     +0.79%
+  11    macro_pos_lag2              -0.0109     0.4000     -0.0043     -0.43%
+  12    weekly_return               +0.1536     0.0222     +0.0034     +0.34%
+  13    d_mp                        +0.0000     0.0000     +0.0000     +0.00%
+  14    d_trade                     +0.0000     0.0000     +0.0000     +0.00%
+────────────────────────────────────────────────────────────
+SECTION 3: PER-SCENARIO NARRATIVE
+
+  BASE SCENARIO
+  Average weekly volume forecast: ~212921 IDR Bn
+
+  This is the neutral reference forecast. The dominant exogenous driver
+  is Absolute macro shock magnitude on announcement week (|shock_score|), contributing +0.0312 log-units on
+  average (+3.2% of weekly volume). The ARMA
+  component carries +31.3548 log-units, reflecting momentum from
+  recent historical volume levels (mean-reversion dynamics).
+  Volume boosters : Absolute macro shock magnitude on announcement week (|shock_score|) (+0.0312), Positive shock residual — 1 week after positive event (fund rebalancing wave) (+0.0288)
+  Volume suppressors: Log of number of trading days in the week (calendar swing adjustment) (-0.0602), Positive shock residual — 2 weeks after positive event (sustained buying) (-0.0027)
+
+  BEAR SCENARIO
+  Average weekly volume forecast: ~210688 IDR Bn
+
+  This scenario is -1.0% vs BASE on average weekly volume.
+  Key differentiators vs BASE (avg delta over 8 weeks):
+    • Absolute macro shock magnitude on announcement week (|shock_score|): +0.0499 log-units (+5.1% vol)
+    • Positive shock residual — 1 week after positive event (fund rebalancing wave): -0.0288 log-units (-2.8% vol)
+    • Negative shock residual — 2 weeks after adverse event (fear/uncertainty phase): -0.0278 log-units (-2.7% vol)
+  The ARMA component contributes +31.3548 log-units (momentum/mean-reversion).
+  Volume boosters : Absolute macro shock magnitude on announcement week (|shock_score|) (+0.0812), Intraweek realized volatility (scaled by √trading days) (+0.0233)
+  Volume suppressors: Log of number of trading days in the week (calendar swing adjustment) (-0.0602), Negative shock residual — 2 weeks after adverse event (fear/uncertainty phase) (-0.0301)
+
+  BULL SCENARIO
+  Average weekly volume forecast: ~241277 IDR Bn
+
+  This scenario is +13.3% vs BASE on average weekly volume.
+  Key differentiators vs BASE (avg delta over 8 weeks):
+    • Positive shock residual — 1 week after positive event (fund rebalancing wave): +0.0648 log-units (+6.7% vol)
+    • Absolute macro shock magnitude on announcement week (|shock_score|): +0.0499 log-units (+5.1% vol)
+    • Positive shock residual — 3 weeks after positive event (MSCI effective-date wave): +0.0140 log-units (+1.4% vol)
+  The ARMA component contributes +31.3548 log-units (momentum/mean-reversion).
+  Volume boosters : Positive shock residual — 1 week after positive event (fund rebalancing wave) (+0.0936), Absolute macro shock magnitude on announcement week (|shock_score|) (+0.0812)
+  Volume suppressors: Log of number of trading days in the week (calendar swing adjustment) (-0.0602), Positive shock residual — 2 weeks after positive event (sustained buying) (-0.0088)
+
+────────────────────────────────────────────────────────────
+MODEL FIT NOTES
+
+  AIC: 5533.4   BIC: 5584.9
+  (Lower AIC/BIC = better model fit. AIC penalises complexity less than BIC.)
+
+────────────────────────────────────────────────────────────
+For machine-readable data see:
+  sensitivity_ranking.csv           — full variable sensitivity table
+  forecast_contribution_analysis.csv — per-week contributions by scenario
+  forecast_summary_table.csv         — wide-format scenario comparison + notes
+────────────────────────────────────────────────────────────

@@ -137,3 +137,110 @@ def forecast_model1(
         raise ValueError(f"NaN detected in Model 1 forecast output columns: {bad}")
 
     return forecast_df
+
+
+def compute_contribution_analysis(
+    fitted_model,
+    future_exog_df: pd.DataFrame,
+    forecast_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Decompose Model 1 forecast into per-variable contributions.
+
+    For each forecast week t:
+        forecast_log_volume_t = intercept + Σ(β_i × x_i_t) + ARMA_component_t
+
+    contribution of variable x_i at step t = β_i × x_i_t  (log-volume units)
+    ARMA component = forecast_log_volume - intercept - Σ(exog contributions)
+
+    Parameters
+    ----------
+    fitted_model   : SARIMAXResults
+    future_exog_df : DataFrame with EXOG_COLS (output of scenario_engine or forecast_model1)
+    forecast_df    : DataFrame output of forecast_model1() (must have week_end_date, forecast_log_volume)
+
+    Returns
+    -------
+    DataFrame with columns:
+        week_end_date, contrib_{col} for each col in EXOG_COLS,
+        contrib_intercept, contrib_arma, exog_total, forecast_log_volume
+    """
+    params = fitted_model.params
+
+    # Extract intercept / const (statsmodels uses either name depending on trend setting)
+    const = 0.0
+    for pname in ["const", "intercept"]:
+        if pname in params.index:
+            const = float(params[pname])
+            break
+
+    # Mirror the fillna applied inside forecast_model1: fill NaN exog with last training values
+    last_train = fitted_model.model.data.exog[-1]  # last row used during fit (numpy array)
+    last_train_series = pd.Series(last_train, index=EXOG_COLS)
+
+    exog = future_exog_df[EXOG_COLS].reset_index(drop=True).fillna(last_train_series)
+    steps = min(len(exog), len(forecast_df))
+
+    rows = []
+    for i in range(steps):
+        contrib_row = {"week_end_date": forecast_df["week_end_date"].iloc[i]}
+        exog_total = 0.0
+        for col in EXOG_COLS:
+            coef = float(params[col]) if col in params.index else 0.0
+            val = float(exog[col].iloc[i]) if col in exog.columns else 0.0
+            contrib = coef * val
+            contrib_row[f"contrib_{col}"] = round(contrib, 6)
+            exog_total += contrib
+
+        forecast_lv = float(forecast_df["forecast_log_volume"].iloc[i])
+        contrib_row["contrib_intercept"] = round(const, 6)
+        contrib_row["contrib_arma"] = round(forecast_lv - const - exog_total, 6)
+        contrib_row["exog_total"] = round(exog_total, 6)
+        contrib_row["forecast_log_volume"] = round(forecast_lv, 6)
+        rows.append(contrib_row)
+
+    return pd.DataFrame(rows)
+
+
+def compute_sensitivity_analysis(
+    fitted_model,
+    weekly_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Compute sensitivity of Model 1 forecast to each exogenous variable.
+
+    For each variable:
+        1-std log impact = coefficient × historical_std
+        1-std vol pct   = (exp(1-std log impact) - 1) × 100
+
+    Parameters
+    ----------
+    fitted_model : SARIMAXResults
+    weekly_df    : DataFrame used for training (to compute historical std)
+
+    Returns
+    -------
+    DataFrame with columns:
+        variable, coefficient, historical_std, 1std_log_impact, 1std_vol_pct
+    Sorted by abs(1std_log_impact) descending.
+    """
+    params = fitted_model.params
+    hist = weekly_df[EXOG_COLS].dropna()
+
+    rows = []
+    for col in EXOG_COLS:
+        coef = float(params[col]) if col in params.index else 0.0
+        std = float(hist[col].std()) if col in hist.columns else 0.0
+        one_std_log = coef * std
+        one_std_pct = (np.exp(one_std_log) - 1) * 100
+        rows.append({
+            "variable": col,
+            "coefficient": round(coef, 6),
+            "historical_std": round(std, 6),
+            "1std_log_impact": round(one_std_log, 6),
+            "1std_vol_pct": round(one_std_pct, 2),
+        })
+
+    df = pd.DataFrame(rows)
+    df = df.sort_values("1std_log_impact", key=abs, ascending=False).reset_index(drop=True)
+    return df
