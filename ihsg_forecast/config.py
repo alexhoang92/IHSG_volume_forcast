@@ -2,7 +2,7 @@
 TICKER          = "^JKSE"          # Yahoo Finance ticker for IHSG
 FETCH_START     = "2023-01-01"     # historical fetch start
 FETCH_END       = None             # None = today
-TRAINING_START  = "2024-01-01"    # earliest date included in model training (set None to use all fetched data)
+TRAINING_START  = "2023-01-01"    # earliest date included in model training (set None to use all fetched data)
 
 # ── Modelling ─────────────────────────────────────────────────────────────────
 FORECAST_WEEKS  = 8                # Model 1 horizon

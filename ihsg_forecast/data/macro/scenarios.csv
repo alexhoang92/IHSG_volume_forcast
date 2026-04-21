@@ -1,25 +1,25 @@
-scenario,week_end_date,shock_score,event_type,policy_rate,Note
-BASE,24-Apr-26,,,,
-BASE,1-May-26,-0.5,monetary_policy,,US FOMC maintain high rate in US and hawk view about condition
-BASE,8-May-26,,,,
-BASE,15-May-26,2,corporate,,MSCI maintain Indonesia as Emmerging market
-BASE,22-May-26,,,,
-BASE,29-May-26,,,,
-BASE,5-Jun-26,,,,
-BASE,12-Jun-26,,,,
-BULL,24-Apr-26,,,,
-BULL,1-May-26,0.5,monetary_policy,,US FOMC send rate cut possitve message
-BULL,8-May-26,,,,
-BULL,15-May-26,5,corporate,,MSCI maintain Indonesia as Emmerging market
-BULL,22-May-26,1,corporate,,FTSE Russel follow MSCI continue market confidence
-BULL,29-May-26,,,,
-BULL,5-Jun-26,,,,
-BULL,12-Jun-26,,,,
-BEAR,24-Apr-26,,,,
-BEAR,1-May-26,-0.5,monetary_policy,,US FOMC maintain high rate in US and hawk view about condition
-BEAR,8-May-26,,,,
-BEAR,15-May-26,-5,corporate,,MSCI downgrade Indonesia
-BEAR,22-May-26,-1,corporate,,FTSE Russel follow MSCI continue market confidence
-BEAR,29-May-26,,,,
-BEAR,5-Jun-26,,,,
-BEAR,12-Jun-26,,,,
+scenario,week_end_date,shock_score,event_type,policy_rate,trading_day,Note
+BASE,24-Apr-26,,,,5,
+BASE,1-May-26,-0.5,monetary_policy,,4,US FOMC maintain high rate in US and hawk view about condition
+BASE,8-May-26,,,,5,
+BASE,15-May-26,,,,3,
+BASE,22-May-26,2,corporate,,5,MSCI maintain Indonesia as Emmerging market
+BASE,29-May-26,,,,3,
+BASE,5-Jun-26,,,,4,
+BASE,12-Jun-26,,,,5,
+BULL,24-Apr-26,,,,5,
+BULL,1-May-26,0.5,monetary_policy,,4,US FOMC send rate cut possitve message
+BULL,8-May-26,,,,5,
+BULL,15-May-26,,,,3,
+BULL,22-May-26,5,corporate,,5,MSCI maintain Indonesia as Emmerging market
+BULL,29-May-26,1,corporate,,3,FTSE Russel follow MSCI continue market confidence
+BULL,5-Jun-26,,,,4,
+BULL,12-Jun-26,,,,5,
+BEAR,24-Apr-26,,,,5,
+BEAR,1-May-26,-0.5,monetary_policy,,4,US FOMC maintain high rate in US and hawk view about condition
+BEAR,8-May-26,,,,5,
+BEAR,15-May-26,,,,3,
+BEAR,22-May-26,-5,corporate,,5,MSCI downgrade Indonesia
+BEAR,29-May-26,-1,corporate,,3,FTSE Russel follow MSCI continue market confidence
+BEAR,5-Jun-26,,,,4,
+BEAR,12-Jun-26,,,,5,

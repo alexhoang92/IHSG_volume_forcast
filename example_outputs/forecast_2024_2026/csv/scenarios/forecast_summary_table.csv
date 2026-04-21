@@ -1,12 +1,12 @@
 week_end_date,BASE_vol_idr_bn,BASE_vol_lower_95,BASE_vol_upper_95,BASE_new_accounts,BULL_vol_idr_bn,BULL_new_accounts,BEAR_vol_idr_bn,BEAR_new_accounts
 2026-04-24,222724.07,163284.28,303801.52,105647,222724.07,105647,222724.07,105647
-2026-05-01,220031.09,155397.73,311546.89,105056,220031.09,105056,220031.09,105056
+2026-05-01,213449.53,150749.49,302227.92,103594,213449.53,103594,213449.53,103594
 2026-05-08,197484.97,134787.17,289347.37,99944,210796.98,102998,197484.97,99944
-2026-05-15,204273.63,135115.71,308829.5,101515,271024.64,115662,272240.72,115901
-2026-05-22,265960.46,170864.84,413982.0,114659,456703.96,147149,226767.78,106528
-2026-05-29,163226.16,102035.48,261112.89,91533,159319.8,90515,146235.32,87006
-2026-06-05,222910.54,135791.29,365922.65,105688,291477.53,119610,182386.05,96343
-2026-06-12,193347.96,114925.74,325283.39,98972,215140.28,103972,195533.56,99487
+2026-05-15,157347.4,104076.6,237884.44,89997,156644.54,89811,157347.4,89997
+2026-05-22,247164.51,158789.48,384725.08,110847,345523.12,129376,329402.51,126555
+2026-05-29,220258.6,137687.44,352347.68,105106,360578.95,131948,187800.67,97652
+2026-06-05,157338.01,95846.22,258280.94,89994,153572.57,88994,140960.09,85544
+2026-06-12,239388.81,142292.35,402741.28,109224,313024.5,123612,195868.62,99566
 
 # ────────────────────────────────────────────────────────────
 # MODEL & DATA NOTES
@@ -16,7 +16,7 @@ week_end_date,BASE_vol_idr_bn,BASE_vol_lower_95,BASE_vol_upper_95,BASE_new_accou
 # Confidence intervals (BASE_vol_lower_95 / BASE_vol_upper_95) are clipped to forecast ±exp(1.5) due to SARIMAX prediction-interval numerical instability over an 8-week horizon. Treat as indicative range only.
 # IPO WARNING: Negative IPO coefficients detected in Model 2. This suggests announcement_date values in ipo_calendar.csv may be IDX listing dates rather than book-open/subscription-start dates. Shift dates ~3–4 weeks earlier to the actual investor registration window for correct IPO uplift estimation.
 # Data note: 1 week(s) in macro_shocks.csv had blank new_accounts and were excluded from Model 2 fitting.
-# Backtest MAPE (volume) — Cycle 1: 37.4%  |  Cycle 2: 41.4%  |  Cycle 3: 35.0%
+# Backtest MAPE (volume) — Cycle 1: 37.4%  |  Cycle 2: 43.8%  |  Cycle 3: 32.3%
 # ────────────────────────────────────────────────────────────
 # SENSITIVITY RANKING — impact of 1 std dev change on weekly volume
 #   (log-volume units; vol_pct = approx % change in weekly IDR volume)
@@ -29,15 +29,15 @@ week_end_date,BASE_vol_idr_bn,BASE_vol_lower_95,BASE_vol_upper_95,BASE_new_accou
 # VARIABLE CONTRIBUTION SUMMARY (avg over 8-week forecast, log-volume units)
 #   Positive = volume-boosting; Negative = volume-suppressing
 #   BASE:
-#     Boosters:    log_trading_days=+0.2190  macro_pos_lag1=+0.0331  macro_shock_abs=+0.0299
+#     Boosters:    log_trading_days=+0.1941  macro_pos_lag1=+0.0331  macro_shock_abs=+0.0299
 #     Suppressors: macro_pos_lag2=-0.0131  macro_neg_lag2=-0.0027
 #     ARMA component (avg): +31.0356
 #   BEAR:
-#     Boosters:    log_trading_days=+0.2190  macro_shock_abs=+0.0778  realized_volatility=+0.0239
+#     Boosters:    log_trading_days=+0.1941  macro_shock_abs=+0.0778  realized_volatility=+0.0239
 #     Suppressors: macro_neg_lag2=-0.0351
 #     ARMA component (avg): +31.0356
 #   BULL:
-#     Boosters:    log_trading_days=+0.2190  macro_pos_lag1=+0.1076  macro_pos_lag3=+0.0868
+#     Boosters:    log_trading_days=+0.1941  macro_pos_lag1=+0.1076  macro_shock_abs=+0.0778
 #     Suppressors: macro_pos_lag2=-0.0424
 #     ARMA component (avg): +31.0356
 #   BEAR vs BASE — key differentiators (avg delta):
@@ -48,8 +48,8 @@ week_end_date,BASE_vol_idr_bn,BASE_vol_lower_95,BASE_vol_upper_95,BASE_new_accou
 #     macro_pos_lag2            +0.0131 log-units (+1.3% vol)
 #   BULL vs BASE — key differentiators (avg delta):
 #     macro_pos_lag1            +0.0745 log-units (+7.7% vol)
-#     macro_pos_lag3            +0.0601 log-units (+6.2% vol)
 #     macro_shock_abs           +0.0479 log-units (+4.9% vol)
+#     macro_pos_lag3            +0.0467 log-units (+4.8% vol)
 #     macro_pos_lag2            -0.0294 log-units (-2.9% vol)
 #     macro_neg_lag2            +0.0027 log-units (+0.3% vol)
 # ────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 IHSG Forecast — Variable Sensitivity & Impact Explanation
-Generated : 2026-04-20
+Generated : 2026-04-21
 Model     : SARIMAX(1, 1, 1)(1, 0, 1, 52)  AIC=-7.1  BIC=32.4
 Horizon   : 8 weeks forward
 ────────────────────────────────────────────────────────────
@@ -143,38 +143,38 @@ SECTION 2: SENSITIVITY RANKING
 SECTION 3: PER-SCENARIO NARRATIVE
 
   BASE SCENARIO
-  Average weekly volume forecast: ~209416 IDR Bn
+  Average weekly volume forecast: ~204251 IDR Bn
 
   This is the neutral reference forecast. The dominant exogenous driver
-  is Log of number of trading days in the week (calendar swing adjustment), contributing +0.2190 log-units on
-  average (+24.5% of weekly volume). The ARMA
+  is Log of number of trading days in the week (calendar swing adjustment), contributing +0.1941 log-units on
+  average (+21.4% of weekly volume). The ARMA
   component carries +31.0356 log-units, reflecting momentum from
   recent historical volume levels (mean-reversion dynamics).
-  Volume boosters : Log of number of trading days in the week (calendar swing adjustment) (+0.2190), Positive shock residual — 1 week after positive event (fund rebalancing wave) (+0.0331)
+  Volume boosters : Log of number of trading days in the week (calendar swing adjustment) (+0.1941), Positive shock residual — 1 week after positive event (fund rebalancing wave) (+0.0331)
   Volume suppressors: Positive shock residual — 2 weeks after positive event (sustained buying) (-0.0131), Negative shock residual — 2 weeks after adverse event (fear/uncertainty phase) (-0.0027)
 
   BEAR SCENARIO
-  Average weekly volume forecast: ~204974 IDR Bn
+  Average weekly volume forecast: ~199638 IDR Bn
 
-  This scenario is -2.1% vs BASE on average weekly volume.
+  This scenario is -2.3% vs BASE on average weekly volume.
   Key differentiators vs BASE (avg delta over 8 weeks):
     • Absolute macro shock magnitude on announcement week (|shock_score|): +0.0479 log-units (+4.9% vol)
     • Positive shock residual — 1 week after positive event (fund rebalancing wave): -0.0331 log-units (-3.3% vol)
     • Negative shock residual — 2 weeks after adverse event (fear/uncertainty phase): -0.0324 log-units (-3.2% vol)
   The ARMA component contributes +31.0356 log-units (momentum/mean-reversion).
-  Volume boosters : Log of number of trading days in the week (calendar swing adjustment) (+0.2190), Absolute macro shock magnitude on announcement week (|shock_score|) (+0.0778)
+  Volume boosters : Log of number of trading days in the week (calendar swing adjustment) (+0.1941), Absolute macro shock magnitude on announcement week (|shock_score|) (+0.0778)
   Volume suppressors: Negative shock residual — 2 weeks after adverse event (fear/uncertainty phase) (-0.0351)
 
   BULL SCENARIO
-  Average weekly volume forecast: ~244509 IDR Bn
+  Average weekly volume forecast: ~235316 IDR Bn
 
-  This scenario is +16.8% vs BASE on average weekly volume.
+  This scenario is +15.2% vs BASE on average weekly volume.
   Key differentiators vs BASE (avg delta over 8 weeks):
     • Positive shock residual — 1 week after positive event (fund rebalancing wave): +0.0745 log-units (+7.7% vol)
-    • Positive shock residual — 3 weeks after positive event (MSCI effective-date wave): +0.0601 log-units (+6.2% vol)
     • Absolute macro shock magnitude on announcement week (|shock_score|): +0.0479 log-units (+4.9% vol)
+    • Positive shock residual — 3 weeks after positive event (MSCI effective-date wave): +0.0467 log-units (+4.8% vol)
   The ARMA component contributes +31.0356 log-units (momentum/mean-reversion).
-  Volume boosters : Log of number of trading days in the week (calendar swing adjustment) (+0.2190), Positive shock residual — 1 week after positive event (fund rebalancing wave) (+0.1076)
+  Volume boosters : Log of number of trading days in the week (calendar swing adjustment) (+0.1941), Positive shock residual — 1 week after positive event (fund rebalancing wave) (+0.1076)
   Volume suppressors: Positive shock residual — 2 weeks after positive event (sustained buying) (-0.0424)
 
 ────────────────────────────────────────────────────────────

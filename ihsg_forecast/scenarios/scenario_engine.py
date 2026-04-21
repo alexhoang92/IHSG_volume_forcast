@@ -49,7 +49,7 @@ def build_future_exog(
       1. Start every row from last_obs = last row of weekly_df[EXOG_COLS]
       2. Override macro_shock_score and event dummies from scenario rows
       3. Compute interest_rate_direction using last 4 known policy_rates + scenario
-      4. Fix log_trading_days = log(5); add week_end_date + trading_days columns
+      4. Set log_trading_days = log(trading_day) from scenario CSV (default 5); add week_end_date + trading_days columns
       5. Clip shock_score to [-2, 2]
       6. Pad short scenarios (< steps) by repeating last row; truncate long ones
     """
@@ -99,9 +99,21 @@ def build_future_exog(
     pos_shock_window = hist_pos[-3:] if len(hist_pos) >= 3 else ([0.0] * (3 - len(hist_pos)) + hist_pos)
 
     rows = []
+    trading_days_list = []
     for i in range(steps):
         row = last_obs.copy()
-        row["log_trading_days"] = np.log(5)  # assume standard 5-day week
+
+        # Use trading_day column if provided; default to 5 (standard week)
+        td = 5.0
+        if "trading_day" in sdf.columns:
+            try:
+                td_val = float(sdf.at[i, "trading_day"])
+                if td_val > 0:
+                    td = td_val
+            except (TypeError, ValueError):
+                pass
+        trading_days_list.append(td)
+        row["log_trading_days"] = np.log(td)
 
         # Compute scenario shock for this week (allow ±MACRO_SHOCK_MAX for structural breaks)
         raw_shock = 0.0
@@ -161,7 +173,7 @@ def build_future_exog(
 
     # Add date and trading_days columns (consumed by forecast_model1 lines 100-108)
     exog_df.insert(0, "week_end_date", [d for d in future_dates[:steps]])
-    exog_df["trading_days"] = 5.0
+    exog_df["trading_days"] = trading_days_list
 
     return exog_df
 
