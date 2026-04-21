@@ -55,7 +55,7 @@ data/raw/ihsg_volume.csv
 | `Date` | Date (YYYY-MM-DD) | Trading date |
 | `volume` | Integer | Daily total trading value in IDR (e.g. `13612384062538`) |
 
-The file must cover at least from `FETCH_START` (default `2023-01-01`) to the current date. Rows with missing dates are ignored (they will not appear in the merged output). The pipeline will **fail with a FileNotFoundError** if this file is absent.
+The file must cover at least from `TRAINING_START` (default `2024-01-01`) to the current date. If you set `TRAINING_START = "2023-01-01"` in `config.py`, the file must go back to that date. Rows with missing dates are ignored (they will not appear in the merged output). The pipeline will **fail with a FileNotFoundError** if this file is absent.
 
 > **Volume units:** IDR (Indonesian Rupiah) total daily transaction value — not share count. All forecast outputs (`forecast_volume_idr_bn`) are derived directly from this source.
 
@@ -75,7 +75,7 @@ cp data/macro/macro_shocks_TEMPLATE.csv data/macro/macro_shocks.csv
 
 ### Step 2.1b — Fill in the CSV
 
-Open `data/macro/macro_shocks.csv` and fill in **one row per week** from `2023-01-06` to today.
+Open `data/macro/macro_shocks.csv` and fill in **one row per week** from the date matching `TRAINING_START` in `config.py` (default `2024-01-01`) to today. Rows before `TRAINING_START` are loaded but ignored by the model.
 
 **Column reference:**
 
@@ -119,6 +119,32 @@ Open `data/macro/macro_shocks.csv` and fill in **one row per week** from `2023-0
 > This means: a score of `+5.0` (MSCI confirmation) drives a ~63% volume spike on announcement week and ~70% sustained uplift the following week. A score of `−5.0` (MSCI downgrade) drives an equivalent spike on announcement week but then depresses volume ~13% for the next two weeks. Use ±3–5 for structural break events where the market impact is visibly larger than typical events — the model will linearly scale the effect.
 
 > **Note:** The pipeline runs end-to-end **even without this file** — all macro variables default to zero with a warning message. However, forecast quality improves significantly with accurate macro input.
+
+---
+
+### Step 2.2 — Scenario Definitions File
+
+The pipeline reads forward scenario assumptions from:
+
+```
+data/macro/scenarios.csv
+```
+
+Each row defines one forecast week for one scenario. Three scenarios are expected: `BASE`, `BULL`, `BEAR`.
+
+**Column reference:**
+
+| Column | Type | Required | Description |
+|---|---|---|---|
+| `scenario` | Text | Yes | Scenario name — `BASE`, `BULL`, or `BEAR` |
+| `week_end_date` | Date | No | Friday of the forecast week (auto-generated if blank) |
+| `shock_score` | Float | No | Macro shock score for that week (same scale as `macro_shocks.csv`) |
+| `event_type` | Text | No | `geopolitical` / `monetary_policy` / `trade` / `corporate` / blank |
+| `policy_rate` | Float | No | Assumed BI rate that week (used to compute `interest_rate_direction`) |
+| `trading_day` | Integer | No | Number of active trading days in the week (default: 5). Use 3–4 for holiday-shortened weeks. |
+| `Note` | Text | No | Free-text label (ignored by the model) |
+
+> **`trading_day` is important for accuracy.** This column drives both `log_trading_days` (model input) and the IDR volume back-conversion (`exp(forecast) × trading_day`). Setting `trading_day=3` for a Eid al-Fitr week correctly scales the forecast down to reflect fewer market sessions. If omitted or blank, the pipeline defaults to 5.
 
 ---
 
@@ -208,11 +234,14 @@ ihsg_forecast/
     │   ├── forecast_forward.csv          ← BASE scenario 8-week forecast (backward compat)
     │   ├── backtest_results.csv          ← week-by-week backtest detail (3 cycles)
     │   └── scenarios/
-    │       ├── forecast_BASE.csv         ← BASE scenario forecast
-    │       ├── forecast_BULL.csv         ← BULL scenario forecast
-    │       ├── forecast_BEAR.csv         ← BEAR scenario forecast
-    │       ├── forecast_all_scenarios.csv ← all scenarios combined (one row per week/scenario)
-    │       └── forecast_summary_table.csv ← wide-format pivot: all scenarios side-by-side + model notes
+    │       ├── forecast_BASE.csv              ← BASE scenario forecast
+    │       ├── forecast_BULL.csv              ← BULL scenario forecast
+    │       ├── forecast_BEAR.csv              ← BEAR scenario forecast
+    │       ├── forecast_all_scenarios.csv     ← all scenarios combined (one row per week/scenario)
+    │       ├── forecast_summary_table.csv     ← wide-format pivot: all scenarios side-by-side + model notes
+    │       ├── forecast_contribution_analysis.csv ← per-variable log-volume contributions per week/scenario
+    │       ├── sensitivity_ranking.csv        ← variables ranked by 1-std impact (coefficient × hist std)
+    │       └── sensitivity_explanation.txt    ← human-readable variable impact narrative (plain text)
     ├── reports/
     │   └── backtest_summary.txt          ← metrics table per cycle
     └── charts/
@@ -233,10 +262,15 @@ ihsg_forecast/
 | `forecast_log_volume` | Log of avg daily IDR volume forecast (trading-day-adjusted) |
 | `lower_ci` | 95% CI lower bound (log scale — clipped to ±1.5 log-units; treat as indicative) |
 | `upper_ci` | 95% CI upper bound (log scale — clipped to ±1.5 log-units; treat as indicative) |
-| `forecast_volume_idr_bn` | Forecast total weekly volume in IDR billion (`exp(forecast_log_volume) × 5 / 1e9`) |
+| `forecast_volume_idr_bn` | Forecast total weekly volume in IDR billion (`exp(forecast_log_volume) × trading_day / 1e9`) |
 | `forecast_new_accounts` | Forecast weekly new brokerage registrations |
 
 > The **wide summary table** (`forecast_summary_table.csv`) shows all three scenarios side by side with model diagnostics appended as `# NOTE:` comment lines at the bottom.
+
+> **Sensitivity & contribution files** are generated every run alongside the forecasts:
+> - `sensitivity_ranking.csv` — each of the 14 model variables, its coefficient, historical std, and approximate % volume impact of a 1-std-dev change. Sorted by absolute impact.
+> - `forecast_contribution_analysis.csv` — per-week breakdown of each variable's log-volume contribution for every scenario. Useful for attributing forecast differences between scenarios to specific drivers.
+> - `sensitivity_explanation.txt` — plain-text narrative summarising variable impacts, the sensitivity ranking table, and a per-scenario explanation of what is driving the forecast vs. BASE. Designed to be read without opening any other file.
 
 ---
 
@@ -277,7 +311,10 @@ All parameters are in `config.py`. Edit these to adjust model behaviour:
 
 ```python
 TICKER               = "^JKSE"           # Yahoo Finance ticker
-FETCH_START          = "2023-01-01"      # data history start
+FETCH_START          = "2023-01-01"      # earliest date to fetch from Yahoo Finance
+TRAINING_START       = "2024-01-01"      # earliest date included in model training
+                                          # set to None to train on all fetched data
+                                          # set to "2023-01-01" for full history run
 FORECAST_WEEKS       = 8                 # forward forecast horizon
 SARIMAX_ORDER        = (1, 1, 1)         # ARIMA (p, d, q)
 SARIMAX_SEASONAL_ORDER = (1, 0, 1, 52)  # Seasonal (P, D, Q, S)
@@ -285,6 +322,8 @@ BACKTEST_MONTHS      = 6                 # total backtest window
 CYCLE_MONTHS         = 2                 # each cycle length
 MACRO_SHOCK_MAX      = 5.0               # clip ceiling for shock scores (±2 typical; ±5 structural breaks)
 ```
+
+> **`TRAINING_START` vs `FETCH_START`:** `FETCH_START` controls how far back the raw price data is downloaded from Yahoo Finance. `TRAINING_START` controls how far back the model is allowed to train. Setting `TRAINING_START = "2024-01-01"` while keeping `FETCH_START = "2023-01-01"` means the 2023 data is downloaded and available but excluded from model fitting and backtest. This is useful when 2023 volume characteristics (different market regime, different exchange rules) would distort model coefficients.
 
 After changing `config.py`, re-run with:
 ```bash
@@ -330,7 +369,7 @@ python main.py --skip-fetch
 | `log_trading_days` | Residual calendar effects |
 
 - **Shock decomposition rationale:** Both positive and negative macro events cause a volume spike on the announcement week (euphoric buying or fire-selling). The direction of the event only matters in subsequent weeks. Lag windows were calibrated from an event study on 19 historical shock events (|score|≥1.0), measuring log-volume deviation from an 8-week pre-shock rolling baseline: negative events show peak suppression at t+2 (−10% avg) with structural breaks (MSCI downgrade) persisting to t+3; positive events remain elevated through t+3 (75% of events still above baseline), with a non-monotonic second wave at t+3–4 corresponding to the MSCI effective rebalancing date. The raw signed `macro_shock_score` is retained in `weekly_variables.csv` for reference but is not used directly as a model input.
-- **Forward forecast** assumes 5 trading days/week by default; back-transforms to total IDR weekly volume via `exp(forecast) × 5 / 1e9` = IDR Billion
+- **Forward forecast** uses the `trading_day` column from `scenarios.csv` per week (defaults to 5 if not provided); back-transforms to total IDR weekly volume via `exp(forecast) × trading_day / 1e9` = IDR Billion. Holiday weeks with 3–4 trading days will forecast proportionally lower absolute volume.
 - **Output is back-transformed** to IDR billion for display; expected range ~100,000–400,000 IDR Bn/week
 - **Minimum data:** 104 weeks (2 years) for reliable seasonal coefficient estimation; 56 weeks absolute minimum
 
