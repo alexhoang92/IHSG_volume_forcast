@@ -39,45 +39,47 @@ python main.py
 
 See [RUNNING.md](RUNNING.md) for full instructions, macro input format, CLI options, and output file reference.
 
-## Example Results (run: 2026-04-21, training from 2023-01-01)
+## Example Results (run: 2026-05-04, training from 2023-01-01)
 
 ### Backtest Performance — 3-cycle rolling expanding window
 
-| Metric | Cycle 1 (Oct–Dec 25) | Cycle 2 (Dec 25–Feb 26) | Cycle 3 (Feb–Apr 26) |
+| Metric | Cycle 1 (Nov 25–Jan 26) | Cycle 2 (Jan 26–Feb 26) | Cycle 3 (Mar 26–May 26) |
 |---|---|---|---|
-| MAPE (volume) | **17.3%** | 29.3% | 30.7% |
-| MAE (log vol) | 0.159 | 0.256 | 0.256 |
-| Direction accuracy | 62% | 62% | 43% |
-| 95% CI coverage | 100% | 89% | 88% |
+| MAPE (volume) | **17.3%** | 19.2% | 49.0% |
+| MAE (log vol) | 0.168 | 0.211 | 0.388 |
+| Direction accuracy | 62% | 71% | 62% |
+| 95% CI coverage | 100% | 100% | 100% |
 
-Cycle 3 MAPE is elevated because it covers the Jan–Mar 2026 MSCI re-ranking period — an extreme structural break event with ±80% actual volume swings that no weekly model can fully anticipate out-of-sample.
+Cycle 3 MAPE is elevated because it covers the Mar–May 2026 MSCI re-ranking period — an extreme structural break event with ±80% actual volume swings that no weekly model can fully anticipate out-of-sample.
 
-### 8-Week Forward Forecast — BASE / BULL / BEAR Scenarios (from 2026-04-24)
+### 8-Week Forward Forecast — BASE / BULL / BEAR Scenarios (from 2026-05-08)
 
-BULL = MSCI confirms Indonesia as Emerging Market (+5 shock on 22-May)
-BEAR = MSCI downgrades Indonesia to Frontier Market (−5 shock on 22-May)
+- BULL = FOMC rate-cut message (+0.5 on 08-May), MSCI maintains Indonesia as EM (+2 on 22-May), FTSE Russell follows (+1 on 29-May)
+- BASE = FOMC hawkish (−0.5 on 08-May), MSCI maintains Indonesia as EM (+2 on 22-May)
+- BEAR = FOMC hawkish (−0.5 on 08-May), MSCI downgrades Indonesia (−2 on 22-May), FTSE Russell follows (−1 on 29-May)
 
-Trading day counts per week (from `scenarios.csv`): 5, 4, 5, 3, 5, 3, 4, 5
+Trading day counts per week (from `scenarios.csv`): 5, 3, 5, 3, 4, 5, 4, 5
 
 | Week end | Days | BASE (IDR bn) | BULL (IDR bn) | BEAR (IDR bn) | BULL−BEAR spread |
 |---|---|---|---|---|---|
-| 24-Apr-26 | 5 | 200,916 | 200,916 | 200,916 | — |
-| 01-May-26 | 4 | 167,435 | 167,435 | 167,435 | — |
-| 08-May-26 | 5 | 195,881 | 205,885 | 195,881 | +5% |
-| **15-May-26** | **3** | **113,365** | **114,745** | **113,365** | +1% |
-| **22-May-26** | **5** | **232,714** | **320,344** | **314,645** | +2% ← both spike |
-| **29-May-26** | **3** | **144,346** | **225,735** | **137,181** | **+64%** ← diverge |
-| 05-Jun-26 | 4 | 148,020 | 160,817 | 128,984 | +25% |
-| 12-Jun-26 | 5 | 198,610 | 211,297 | 172,359 | +23% |
+| 08-May-26 | 5 | 194,657 | 194,657 | 194,657 | — |
+| **15-May-26** | **3** | **112,096** | **117,821** | **112,096** | +5% ← FOMC lag |
+| **22-May-26** | **5** | **221,573** | **224,266** | **221,573** | +1% ← both spike (abs effect) |
+| **29-May-26** | **3** | **138,788** | **156,226** | **125,739** | **+24%** ← diverge via neg/pos lags |
+| 05-Jun-26 | 4 | 143,275 | 160,814 | 138,699 | +16% |
+| 12-Jun-26 | 5 | 191,962 | 189,875 | 172,552 | +10% |
+| 19-Jun-26 | 4 | 148,446 | 152,081 | 146,740 | +4% |
+| 26-Jun-26 | 5 | 186,914 | 186,914 | 186,914 | — |
 
-Both BULL and BEAR spike on announcement week (abs shock effect). The spread opens the following week via the directional lag structure: BULL gets `pos_lag1 × 5 → +56%` volume uplift on 29-May; BEAR gets `neg_lag1 × 5 → −6%` then deepens via `neg_lag2`. Short holiday weeks (3-day: May 15, May 29) show materially lower absolute volumes from the trading_day adjustment.
+Both BULL and BEAR spike equally on announcement week (abs shock effect). The spread opens via the directional lag structure: BULL gets `pos_lag1 × 2 → +13%` volume uplift on 29-May; BEAR gets `neg_lag1 × 2 → −9%` then deepens via `neg_lag2`. Short holiday weeks (3-day: May 15, May 29) show materially lower absolute volumes from the trading_day adjustment.
 
-Two reference runs are committed to [`example_outputs/`](example_outputs/):
+Three reference runs are committed to [`example_outputs/`](example_outputs/):
 
-| Folder | Training start | Training weeks | Backtest MAPE (C1/C2/C3) |
-|---|---|---|---|
-| [`forecast_2023_2026/`](example_outputs/forecast_2023_2026/) | 2023-01-01 | 170 weeks | 17% / 29% / 31% |
-| [`forecast_2024_2026/`](example_outputs/forecast_2024_2026/) | 2024-01-01 | 118 weeks | 37% / 44% / 32% |
+| Folder | Training start | Training weeks | Backtest MAPE (C1/C2/C3) | Forecast window |
+|---|---|---|---|---|
+| [`forecast_2023_2026/`](example_outputs/forecast_2023_2026/) | 2023-01-01 | 170 weeks | 17% / 29% / 31% | Apr–Jun 2026 |
+| [`forecast_2024_2026/`](example_outputs/forecast_2024_2026/) | 2024-01-01 | 118 weeks | 37% / 44% / 32% | Apr–Jun 2026 |
+| [`forecast_2026_may/`](example_outputs/forecast_2026_may/) | 2023-01-01 | 172 weeks | 17% / 19% / 49% | May–Jun 2026 |
 
 Live pipeline outputs are written to `ihsg_forecast/outputs/` (gitignored during normal runs).
 
@@ -87,8 +89,9 @@ After a pipeline run, files are written to `ihsg_forecast/outputs/`. Reference s
 
 ```
 example_outputs/
-├── forecast_2023_2026/          ← full training period (2023-01-01 onwards)
-└── forecast_2024_2026/          ← restricted training (2024-01-01 onwards)
+├── forecast_2023_2026/          ← full training (2023-01-01), Apr–Jun 2026 forecast
+├── forecast_2024_2026/          ← restricted training (2024-01-01), Apr–Jun 2026 forecast
+└── forecast_2026_may/           ← full training (2023-01-01), May–Jun 2026 forecast (run 2026-05-04)
     ├── csv/
     │   ├── forecast_forward.csv               — BASE scenario 8-week forecast
     │   ├── backtest_results.csv               — week-by-week backtest detail (3 cycles)

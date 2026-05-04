@@ -1,0 +1,54 @@
+week_end_date,BASE_vol_idr_bn,BASE_vol_lower_95,BASE_vol_upper_95,BASE_new_accounts,BULL_vol_idr_bn,BULL_new_accounts,BEAR_vol_idr_bn,BEAR_new_accounts
+2026-05-08,194656.71,43433.78,872390.85,80363,194656.71,80363,194656.71,80363
+2026-05-15,186827.48,41686.85,837302.68,78670,196368.1,80728,186827.48,78670
+2026-05-22,221572.63,49439.54,993019.65,85946,224266.12,86486,221572.63,85946
+2026-05-29,231313.53,51613.03,1036675.33,87886,260376.92,93449,209564.8,83498
+2026-06-05,179093.66,39961.2,802642.09,76964,201017.91,81714,173374.1,75679
+2026-06-12,191961.79,42832.47,860313.06,79784,189875.29,79333,172551.92,75492
+2026-06-19,185557.95,41403.57,831613.03,78392,190101.67,79382,183425.26,77923
+2026-06-26,186913.64,41706.07,837688.8,78689,186913.64,78689,186913.64,78689
+
+# ────────────────────────────────────────────────────────────
+# MODEL & DATA NOTES
+# ────────────────────────────────────────────────────────────
+# Model 1 (Volume): SARIMAX(1,1,1)(1,0,1,52)  AIC=5042.2  BIC=5094.0
+# Model 2 (New Accounts): Negative Binomial  Pseudo R²=0.0751
+# Confidence intervals (BASE_vol_lower_95 / BASE_vol_upper_95) are clipped to forecast ±exp(1.5) due to SARIMAX prediction-interval numerical instability over an 8-week horizon. Treat as indicative range only.
+# IPO WARNING: Negative IPO coefficients detected in Model 2. This suggests announcement_date values in ipo_calendar.csv may be IDX listing dates rather than book-open/subscription-start dates. Shift dates ~3–4 weeks earlier to the actual investor registration window for correct IPO uplift estimation.
+# Backtest MAPE (volume) — Cycle 1: 17.3%  |  Cycle 2: 19.2%  |  Cycle 3: 49.0%
+# ────────────────────────────────────────────────────────────
+# SENSITIVITY RANKING — impact of 1 std dev change on weekly volume
+#   (log-volume units; vol_pct = approx % change in weekly IDR volume)
+#   1. macro_shock_abs           coef=+0.1005  1σ=0.6574  → +0.0661 log-units (+6.8% vol)
+#   2. macro_pos_lag1            coef=+0.1155  1σ=0.3978  → +0.0459 log-units (+4.7% vol)
+#   3. d_geo                     coef=+0.3063  1σ=0.1088  → +0.0333 log-units (+3.4% vol)
+#   4. macro_neg_lag2            coef=-0.0351  1σ=0.5432  → -0.0191 log-units (-1.9% vol)
+#   5. interest_rate_direction   coef=+0.1332  1σ=0.1109  → +0.0148 log-units (+1.5% vol)
+# ────────────────────────────────────────────────────────────
+# VARIABLE CONTRIBUTION SUMMARY (avg over 8-week forecast, log-volume units)
+#   Positive = volume-boosting; Negative = volume-suppressing
+#   BASE:
+#     Boosters:    macro_shock_abs=+0.0314  macro_pos_lag1=+0.0289  realized_volatility=+0.0197
+#     Suppressors: log_trading_days=-0.0372  weekly_return=-0.0045  macro_pos_lag2=-0.0027
+#     ARMA component (avg): +31.2626
+#   BEAR:
+#     Boosters:    macro_shock_abs=+0.0440  realized_volatility=+0.0197  macro_neg_lag1=+0.0069
+#     Suppressors: log_trading_days=-0.0372  macro_neg_lag2=-0.0154  macro_neg_lag3=-0.0051
+#     ARMA component (avg): +31.2626
+#   BULL:
+#     Boosters:    macro_pos_lag1=+0.0505  macro_shock_abs=+0.0440  realized_volatility=+0.0197
+#     Suppressors: log_trading_days=-0.0372  macro_pos_lag2=-0.0048  weekly_return=-0.0045
+#     ARMA component (avg): +31.2626
+#   BEAR vs BASE — key differentiators (avg delta):
+#     macro_pos_lag1            -0.0289 log-units (-2.8% vol)
+#     macro_neg_lag2            -0.0132 log-units (-1.3% vol)
+#     macro_shock_abs           +0.0126 log-units (+1.3% vol)
+#     macro_pos_lag3            -0.0060 log-units (-0.6% vol)
+#     macro_neg_lag1            +0.0060 log-units (+0.6% vol)
+#   BULL vs BASE — key differentiators (avg delta):
+#     macro_pos_lag1            +0.0217 log-units (+2.2% vol)
+#     macro_shock_abs           +0.0126 log-units (+1.3% vol)
+#     macro_pos_lag3            +0.0045 log-units (+0.5% vol)
+#     macro_neg_lag2            +0.0022 log-units (+0.2% vol)
+#     macro_pos_lag2            -0.0020 log-units (-0.2% vol)
+# ────────────────────────────────────────────────────────────

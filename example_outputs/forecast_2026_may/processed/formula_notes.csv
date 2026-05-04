@@ -1,0 +1,17 @@
+variable_name,formula,inputs_required,source,notes
+index_level,P_t = Friday closing price,close (weekly),yahoo_finance,Friday close of IHSG (IDX Composite)
+weekly_return,r_t = ln(P_t / P_{t-1}),index_level,computed,Log return ensures stationarity; first row is NaN
+log_volume,lv_t = ln(V_t),volume (weekly sum),yahoo_finance,Target variable for Model 1; log-transform stabilises variance
+realized_volatility,sigma_t = std(r_daily in week t) * sqrt(n_days),daily close prices,computed,Realised weekly volatility proxy scaled by sqrt of trading days
+volume_momentum,delta_V_t = lv_t - lv_{t-1},log_volume,computed,First-difference of log volume; captures acceleration in activity
+lag_lv_1,lv_{t-1},log_volume,computed,1-week lagged log volume — AR input
+lag_lv_2,lv_{t-2},log_volume,computed,2-week lagged log volume — AR input
+lag_lv_3,lv_{t-3},log_volume,computed,3-week lagged log volume — AR input
+lag_lv_4,lv_{t-4},log_volume,computed,4-week lagged log volume — AR input
+cumulative_4w_return,"CR_t = sum(r_{t-k}, k=0..3)",weekly_return,computed,Rolling 4-week sum of returns; bull/bear momentum signal
+interest_rate_direction,IR_t = rate_t - rate_{t-4},policy_rate (macro_shocks.csv),macro_shocks.csv,"4-week change in BI policy rate; positive=tightening, negative=easing"
+macro_shock_score,"S_t in {-2, -1.5, -1, -0.5, 0, +0.5, +1, +1.5, +2}",shock_score (macro_shocks.csv),macro_shocks.csv,Analyst-assigned weekly macro sentiment score
+d_geo,"D_geo in {0,1}",event_type (macro_shocks.csv),macro_shocks.csv,Binary dummy: geopolitical event week
+d_mp,"D_mp in {0,1}",event_type (macro_shocks.csv),macro_shocks.csv,Binary dummy: monetary policy event week
+d_trade,"D_trade in {0,1}",event_type (macro_shocks.csv),macro_shocks.csv,Binary dummy: trade event week
+d_corporate,"D_corporate in {0,1}",event_type (macro_shocks.csv),macro_shocks.csv,Binary dummy: corporate event week
