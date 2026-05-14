@@ -10,11 +10,15 @@ from routes.upload import router as upload_router
 
 app = FastAPI(title="IHSG Forecast API", version="1.0.0")
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+# Accept a comma-separated list so both the Vercel production URL and
+# preview-deployment URLs can be whitelisted without redeploying Railway.
+# e.g. FRONTEND_URL=https://ihsg.vercel.app,https://ihsg-git-main-you.vercel.app
+_raw_origins = os.getenv("FRONTEND_URL", "http://localhost:3000")
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -10,7 +10,8 @@ async function apiFetch(path: string, options: FetchOptions = {}): Promise<Respo
     credentials: "include",
   });
 
-  if (res.status === 401 && typeof window !== "undefined") {
+  // Don't redirect on the login endpoint itself — the caller handles 401 there.
+  if (res.status === 401 && typeof window !== "undefined" && path !== "/auth/login") {
     window.location.href = "/login";
   }
 

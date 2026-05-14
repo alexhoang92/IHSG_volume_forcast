@@ -18,8 +18,23 @@ export default function LoginPage() {
     try {
       await apiPost("/auth/login", { username, password });
       router.push("/dashboard");
-    } catch {
-      setError("Invalid username or password");
+    } catch (err: unknown) {
+      const msg = (err as Error).message ?? "";
+      // apiPost throws new Error(responseText) on non-2xx responses.
+      // A real 401 body from FastAPI is {"detail":"Invalid username or password"}.
+      // A CORS or network failure throws a TypeError with "Failed to fetch" (Chrome)
+      // or "NetworkError..." (Firefox) — these should not say "wrong password".
+      const isAuthFailure =
+        msg.includes("Invalid username or password") ||
+        msg.includes('"detail"') ||
+        msg.includes("401");
+      if (isAuthFailure) {
+        setError("Invalid username or password");
+      } else if (msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network")) {
+        setError("Cannot reach the API server. Check that NEXT_PUBLIC_API_URL is set correctly on Vercel and that FRONTEND_URL on Railway includes this app's origin.");
+      } else {
+        setError(`Login failed: ${msg}`);
+      }
     } finally {
       setLoading(false);
     }
